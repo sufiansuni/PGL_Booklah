@@ -1,4 +1,4 @@
-# PGL_Booklah
+# PGL_Booklah - Team 3
 
 Overview: A Restaurant seat/table reservation based on the booking size and restaurant availability. This system will be able to follow the Government's COVID-19 restriction measures.
 
