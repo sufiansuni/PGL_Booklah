@@ -59,7 +59,7 @@ func signup(res http.ResponseWriter, req *http.Request) {
 				return
 			}
 			// create session
-			id := uuid.NewV4()
+			id, _ := uuid.NewV4()
 			myCookie := &http.Cookie{
 				Name:  "myCookie",
 				Value: id.String(),
@@ -107,7 +107,7 @@ func login(res http.ResponseWriter, req *http.Request) {
 			return
 		}
 		// create session
-		id := uuid.NewV4()
+		id, _ := uuid.NewV4()
 		myCookie := &http.Cookie{
 			Name:  "myCookie",
 			Value: id.String(),
@@ -144,7 +144,7 @@ func getUser(res http.ResponseWriter, req *http.Request) user {
 	// get current session cookie
 	myCookie, err := req.Cookie("myCookie")
 	if err != nil {
-		id := uuid.NewV4()
+		id, _ := uuid.NewV4()
 		myCookie = &http.Cookie{
 			Name:  "myCookie",
 			Value: id.String(),
