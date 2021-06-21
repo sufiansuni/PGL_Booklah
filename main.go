@@ -36,6 +36,11 @@ func InitializeRouter() {
 	r.HandleFunc("/logout", Logout)
 	r.Handle("/favicon.ico", http.NotFoundHandler())
 
+	http.HandleFunc("/register", RegisterHandler)
+	http.HandleFunc("/registerauth", RegisterAuthHandler)
+	http.HandleFunc("/verifyemail", VerifyEmailHandler)
+	//http.HandleFunc("/login", LoginHandler)
+
 	r.HandleFunc("/api/v1/users/{user_id}", GetUser).Methods("GET")
 	r.HandleFunc("/api/v1/users", CreateUser).Methods("POST")
 	r.HandleFunc("/api/v1/users/{user_id}", UpdateUser).Methods("PUT")
