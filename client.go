@@ -1,45 +1,18 @@
 package main
 
 import (
-	"html/template"
 	"net/http"
 
 	uuid "github.com/satori/go.uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
-type user struct {
-	Username string
-	Password []byte
-	First    string
-	Last     string
-}
-
-var tpl *template.Template
-var mapUsers = map[string]user{}
-var mapSessions = map[string]string{}
-
-func init() {
-	tpl = template.Must(template.ParseGlob("templates/*"))
-	bPassword, _ := bcrypt.GenerateFromPassword([]byte("password"), bcrypt.MinCost)
-	mapUsers["admin"] = user{"admin", bPassword, "admin", "admin"}
-}
-
-func main() {
-	http.HandleFunc("/", index)
-	http.HandleFunc("/signup", signup)
-	http.HandleFunc("/login", login)
-	http.HandleFunc("/logout", logout)
-	http.Handle("/favicon.ico", http.NotFoundHandler())
-	http.ListenAndServe(":8080", nil)
-}
-
-func index(res http.ResponseWriter, req *http.Request) {
+func Index(res http.ResponseWriter, req *http.Request) {
 	myUser := getUser(res, req)
 	tpl.ExecuteTemplate(res, "index.gohtml", myUser)
 }
 
-func signup(res http.ResponseWriter, req *http.Request) {
+func Signup(res http.ResponseWriter, req *http.Request) {
 	if alreadyLoggedIn(req) {
 		http.Redirect(res, req, "/", http.StatusSeeOther)
 		return
@@ -59,7 +32,7 @@ func signup(res http.ResponseWriter, req *http.Request) {
 				return
 			}
 			// create session
-			id, _ := uuid.NewV4()
+			id := uuid.NewV4()
 			myCookie := &http.Cookie{
 				Name:  "myCookie",
 				Value: id.String(),
@@ -84,7 +57,7 @@ func signup(res http.ResponseWriter, req *http.Request) {
 	tpl.ExecuteTemplate(res, "signup.gohtml", myUser)
 }
 
-func login(res http.ResponseWriter, req *http.Request) {
+func Login(res http.ResponseWriter, req *http.Request) {
 	if alreadyLoggedIn(req) {
 		http.Redirect(res, req, "/", http.StatusSeeOther)
 		return
@@ -107,7 +80,7 @@ func login(res http.ResponseWriter, req *http.Request) {
 			return
 		}
 		// create session
-		id, _ := uuid.NewV4()
+		id := uuid.NewV4()
 		myCookie := &http.Cookie{
 			Name:  "myCookie",
 			Value: id.String(),
@@ -121,7 +94,7 @@ func login(res http.ResponseWriter, req *http.Request) {
 	tpl.ExecuteTemplate(res, "login.gohtml", nil)
 }
 
-func logout(res http.ResponseWriter, req *http.Request) {
+func Logout(res http.ResponseWriter, req *http.Request) {
 	if !alreadyLoggedIn(req) {
 		http.Redirect(res, req, "/", http.StatusSeeOther)
 		return
@@ -144,7 +117,7 @@ func getUser(res http.ResponseWriter, req *http.Request) user {
 	// get current session cookie
 	myCookie, err := req.Cookie("myCookie")
 	if err != nil {
-		id, _ := uuid.NewV4()
+		id := uuid.NewV4()
 		myCookie = &http.Cookie{
 			Name:  "myCookie",
 			Value: id.String(),
