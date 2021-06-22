@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"html/template"
 	"math/rand"
 	"net"
 	"net/http"
@@ -14,156 +15,117 @@ import (
 	"time"
 	"unicode"
 
-	uuid "github.com/satori/go.uuid"
+	"github.com/gorilla/sessions"
 	"golang.org/x/crypto/bcrypt"
+
+	_ "github.com/go-sql-driver/mysql"
 )
 
-func Index(res http.ResponseWriter, req *http.Request) {
-	myUser := getUser(res, req)
-	tpl.ExecuteTemplate(res, "index.gohtml", myUser)
+var tpl *template.Template
+var db *sql.DB
+var store = sessions.NewCookieStore([]byte("super-secret"))
+
+type Message struct {
+	Username   string
+	Email      string
+	ErrMessage string
 }
 
-func Signup(res http.ResponseWriter, req *http.Request) {
-	if alreadyLoggedIn(req) {
-		http.Redirect(res, req, "/", http.StatusSeeOther)
-		return
-	}
-	var myUser user
-	// process form submission
-	if req.Method == http.MethodPost {
-		// get form values
-		username := req.FormValue("username")
-		password := req.FormValue("password")
-		firstname := req.FormValue("firstname")
-		lastname := req.FormValue("lastname")
-		if username != "" {
-			// check if username exist/ taken
-			if _, ok := mapUsers[username]; ok {
-				http.Error(res, "Username already taken", http.StatusForbidden)
-				return
-			}
-			// create session
-			id := uuid.NewV4()
-			myCookie := &http.Cookie{
-				Name:  "myCookie",
-				Value: id.String(),
-			}
-			http.SetCookie(res, myCookie)
-			mapSessions[myCookie.Value] = username
-
-			bPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.MinCost)
-			if err != nil {
-				http.Error(res, "Internal server error", http.StatusInternalServerError)
-				return
-			}
-
-			myUser = user{username, bPassword, firstname, lastname}
-			mapUsers[username] = myUser
-		}
-		// redirect to main index
-		http.Redirect(res, req, "/", http.StatusSeeOther)
-		return
-
-	}
-	tpl.ExecuteTemplate(res, "signup.gohtml", myUser)
-}
-
-func Login(res http.ResponseWriter, req *http.Request) {
-	if alreadyLoggedIn(req) {
-		http.Redirect(res, req, "/", http.StatusSeeOther)
-		return
-	}
-
-	// process form submission
-	if req.Method == http.MethodPost {
-		username := req.FormValue("username")
-		password := req.FormValue("password")
-		// check if user exist with username
-		myUser, ok := mapUsers[username]
-		if !ok {
-			http.Error(res, "Username and/or password do not match", http.StatusUnauthorized)
-			return
-		}
-		// Matching of password entered
-		err := bcrypt.CompareHashAndPassword(myUser.Password, []byte(password))
-		if err != nil {
-			http.Error(res, "Username and/or password do not match", http.StatusForbidden)
-			return
-		}
-		// create session
-		id := uuid.NewV4()
-		myCookie := &http.Cookie{
-			Name:  "myCookie",
-			Value: id.String(),
-		}
-		http.SetCookie(res, myCookie)
-		mapSessions[myCookie.Value] = username
-		http.Redirect(res, req, "/", http.StatusSeeOther)
-		return
-	}
-
-	tpl.ExecuteTemplate(res, "login.gohtml", nil)
-}
-
-func Logout(res http.ResponseWriter, req *http.Request) {
-	if !alreadyLoggedIn(req) {
-		http.Redirect(res, req, "/", http.StatusSeeOther)
-		return
-	}
-	myCookie, _ := req.Cookie("myCookie")
-	// delete the session
-	delete(mapSessions, myCookie.Value)
-	// remove the cookie
-	myCookie = &http.Cookie{
-		Name:   "myCookie",
-		Value:  "",
-		MaxAge: -1,
-	}
-	http.SetCookie(res, myCookie)
-
-	http.Redirect(res, req, "/", http.StatusSeeOther)
-}
-
-func getUser(res http.ResponseWriter, req *http.Request) user {
-	// get current session cookie
-	myCookie, err := req.Cookie("myCookie")
+func main() {
+	tpl, _ = template.ParseGlob("templates/*.html")
+	var err error
+	db, err = sql.Open("mysql", "root:password@tcp(localhost:3306)/my_db")
 	if err != nil {
-		id := uuid.NewV4()
-		myCookie = &http.Cookie{
-			Name:  "myCookie",
-			Value: id.String(),
-		}
-
+		panic(err.Error())
 	}
-	http.SetCookie(res, myCookie)
-
-	// if the user exists already, get user
-	var myUser user
-	if username, ok := mapSessions[myCookie.Value]; ok {
-		myUser = mapUsers[username]
-	}
-
-	return myUser
+	defer db.Close()
+	http.HandleFunc("/", indexHandler)
+	http.HandleFunc("/login", loginHandler)
+	http.HandleFunc("/loginauth", loginAuthHandler)
+	http.HandleFunc("/logout", logoutHandler)
+	http.HandleFunc("/register", registerHandler)
+	http.HandleFunc("/registerauth", registerAuthHandler)
+	http.HandleFunc("/verifyemail", verifyEmailHandler)
+	http.Handle("/favicon.ico", http.NotFoundHandler())
+	http.ListenAndServe("localhost:8080", nil)
 }
 
-func alreadyLoggedIn(req *http.Request) bool {
-	myCookie, err := req.Cookie("myCookie")
-	if err != nil {
-		return false
+func indexHandler(w http.ResponseWriter, r *http.Request) {
+
+	fmt.Println("*****indexHandler running*****")
+	session, _ := store.Get(r, "session")
+	_, ok := session.Values["userID"]
+	fmt.Println("ok:", ok)
+	if !ok {
+		http.Redirect(w, r, "/login", http.StatusFound) // http.StatusFound is 302
+		return
 	}
-	username := mapSessions[myCookie.Value]
-	_, ok := mapUsers[username]
-	return ok
+	tpl.ExecuteTemplate(w, "index.html", "Logged In")
+}
+
+func aboutHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("*****aboutHandler running*****")
+	session, _ := store.Get(r, "session")
+	_, ok := session.Values["userID"]
+	fmt.Println("ok:", ok)
+	if !ok {
+		http.Redirect(w, r, "/login", http.StatusFound) // http.StatusFound is 302
+		return
+	}
+	tpl.ExecuteTemplate(w, "about.html", "Logged In")
+}
+
+func loginHandler(w http.ResponseWriter, r *http.Request) {
+	// insert login logic here
+	fmt.Fprint(w, "congrats, you are logged in")
+}
+
+func logoutHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("*****logoutHandler running*****")
+	session, _ := store.Get(r, "session")
+	// The delete built-in function deletes the element with the specified key (m[key]) from the map.
+	// If m is nil or there is no such element, delete is a no-op.
+	delete(session.Values, "userID")
+	session.Save(r, w)
+	tpl.ExecuteTemplate(w, "login.html", "Logged Out")
+}
+
+func loginAuthHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("*****loginAuthHandler running*****")
+	r.ParseForm()
+	username := r.FormValue("username")
+	password := r.FormValue("password")
+	fmt.Println("username:", username, "password:", password)
+	// retrieve password from db to compare (hash) with user supplied password's hash
+	var hash string
+	stmt := "SELECT Hash FROM bcrypt WHERE Username = ?"
+	row := db.QueryRow(stmt, username)
+	err := row.Scan(&hash)
+	fmt.Println("hash from db:", hash)
+	if err != nil {
+		fmt.Println("error selecting Hash in db by Username")
+		tpl.ExecuteTemplate(w, "login.html", "check username and password")
+		return
+	}
+	// func CompareHashAndPassword(hashedPassword, password []byte) error
+	err = bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+	// returns nill on succcess
+	if err == nil {
+		fmt.Fprint(w, "You have successfully logged in :)")
+		return
+	}
+	fmt.Println("incorrect password")
+	tpl.ExecuteTemplate(w, "login.html", "check username and password")
 }
 
 // registerHandler serves form for registring new users
-func RegisterHandler(w http.ResponseWriter, r *http.Request) {
+func registerHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("*****registerHandler running*****")
 	tpl.ExecuteTemplate(w, "register.html", nil)
 }
 
 // registerAuthHandler creates new user in database
-func RegisterAuthHandler(w http.ResponseWriter, r *http.Request) {
+func registerAuthHandler(w http.ResponseWriter, r *http.Request) {
 	/*
 		1. check username criteria
 		2. check password criteria
@@ -205,7 +167,7 @@ func RegisterAuthHandler(w http.ResponseWriter, r *http.Request) {
 	// begin transaction, every query runs successfully or else no changes are made to the database
 	// func (db *DB) Begin() (*Tx, error)
 	var tx *sql.Tx
-	tx, err = sqlDB.Begin()
+	tx, err = db.Begin()
 	if err != nil {
 		fmt.Println("failed to begin transaction, err:", err)
 		tpl.ExecuteTemplate(w, "register.html", "There was an issue registering, please try again")
@@ -309,7 +271,7 @@ func RegisterAuthHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// email the code
-	err = EmailVerCode(rn, email)
+	err = emailVerCode(rn, email)
 	if err != nil {
 		fmt.Println("error emailing verification code, err:", err)
 		tpl.ExecuteTemplate(w, "register.html", "There was a problem registering account, please try again")
@@ -335,13 +297,13 @@ func RegisterAuthHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // verifyEmailHandler serves form for registring new users
-func VerifyEmailHandler(w http.ResponseWriter, r *http.Request) {
+func verifyEmailHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("*****verifyEmailHandler running*****")
 	r.ParseForm()
 	// check username criteria
 	email := r.FormValue("email")
 	verCode := r.FormValue("vercode")
-	tx, err := sqlDB.Begin()
+	tx, err := db.Begin()
 	if err != nil {
 		fmt.Println("failed to begin transaction, err:", err)
 		tpl.ExecuteTemplate(w, "verifyemail.html", "Sorry, there was an issue verifying email, please try again")
@@ -414,12 +376,7 @@ func VerifyEmailHandler(w http.ResponseWriter, r *http.Request) {
 	tpl.ExecuteTemplate(w, "verifyemail.html", m)
 }
 
-func LoginHandler(w http.ResponseWriter, r *http.Request) {
-	// insert login logic here
-	fmt.Fprint(w, "congrats, you are logged in")
-}
-
-func EmailVerCode(rn int, toEmail string) error {
+func emailVerCode(rn int, toEmail string) error {
 	// sender data
 	from := "wld2046@gmail.com"    //ex: "John.Doe@gmail.com"
 	password := "snhovfquxxzoysse" // ex: "ieiemcjdkejspqz"
@@ -455,17 +412,17 @@ func checkUsernameCriteria(username string) error {
 			nameAlphaNumeric = false
 		}
 	}
-	if !nameAlphaNumeric {
+	if nameAlphaNumeric != true {
 		// func New(text string) error
-		return errors.New("username must only contain letters and numbers")
+		return errors.New("Username must only contain letters and numbers")
 	}
 	// check username length
 	var nameLength bool
 	if 5 <= len(username) && len(username) <= 50 {
 		nameLength = true
 	}
-	if !nameLength {
-		return errors.New("username must be longer than 4 characters and less than 51")
+	if nameLength != true {
+		return errors.New("Username must be longer than 4 characters and less than 51")
 	}
 	return nil
 }
@@ -503,17 +460,17 @@ func checkPasswordCriteria(password string) error {
 	if !pswdLowercase || !pswdUppercase || !pswdNumber || !pswdSpecial || !pswdLength || !pswdNoSpaces {
 		switch false {
 		case pswdLowercase:
-			err = errors.New("password must contain atleast one lower case letter")
+			err = errors.New("Password must contain atleast one lower case letter")
 		case pswdUppercase:
-			err = errors.New("password must contain atleast one uppercase letter")
+			err = errors.New("Password must contain atleast one uppercase letter")
 		case pswdNumber:
-			err = errors.New("password must contain atleast one number")
+			err = errors.New("Password must contain atleast one number")
 		case pswdSpecial:
-			err = errors.New("password must contain atleast one special character")
+			err = errors.New("Password must contain atleast one special character")
 		case pswdLength:
-			err = errors.New("password length must atleast 12 characters and less than 60")
+			err = errors.New("Passward length must atleast 12 characters and less than 60")
 		case pswdNoSpaces:
-			err = errors.New("password cannot have any spaces")
+			err = errors.New("Password cannot have any spaces")
 		}
 		return err
 	}
@@ -529,15 +486,15 @@ func checkEmailValid(email string) error {
 		return errors.New("sorry, something went wrong")
 	}
 	rg := emailRegex.MatchString(email)
-	if !rg {
-		return errors.New("email address is not a valid syntax, please check again")
+	if rg != true {
+		return errors.New("Email address is not a valid syntax, please check again")
 	}
 	// check email length
 	if len(email) < 4 {
-		return errors.New("email length is too short")
+		return errors.New("Email length is too short")
 	}
 	if len(email) > 253 {
-		return errors.New("email length is too long")
+		return errors.New("Email length is too long")
 	}
 	return nil
 }
@@ -548,7 +505,7 @@ func checkEmailDomain(email string) error {
 	// func LookupMX(name string) ([]*MX, error)
 	_, err := net.LookupMX(host)
 	if err != nil {
-		err = errors.New("could not find email's domain server, please chack and try again")
+		err = errors.New("Could not find email's domain server, please chack and try again")
 		return err
 	}
 	return nil
