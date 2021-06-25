@@ -7,6 +7,11 @@ import (
 
 	"github.com/gorilla/mux"
 	"golang.org/x/crypto/bcrypt"
+	
+	"database/sql"
+	"fmt"
+
+	_ "github.com/go-sql-driver/mysql"
 )
 
 type user struct {
@@ -28,6 +33,17 @@ func init() {
 
 func main() {
 	r := mux.NewRouter() //New Router Instance
+	
+	//opening of database
+	db, err := sql.Open("mysql", "newuser:password@tcp(127.0.0.1:55033)/my_restaurant")
+	defer db.Close()
+
+	// handle error
+	if err != nil {
+		panic(err.Error())
+	} else {
+		fmt.Println("Database opened")
+	}
 
 	//loginlogout handlers
 	r.HandleFunc("/", index)
