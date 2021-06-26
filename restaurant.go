@@ -144,4 +144,6 @@ func deleteRestaurant(res http.ResponseWriter, req *http.Request) {
 	params := mux.Vars(req)
 	delete(mapRestaurants, params["restaurantname"])
 	fmt.Println(params["restaurantname"], "deleted")
+
+	http.Redirect(res, req, "/restaurants", http.StatusSeeOther)
 }

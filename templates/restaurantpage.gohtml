@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Restaurants</title>
+</head>
+<body>
+<h1>Welcome to {{.RestaurantName}}</h1>
+
+{{if .}}
+<h2>Restaurant Details:</h2>
+Restaurant Name: {{.RestaurantName}}<br>
+
+
+{{if .Tables}}
+<h2>List of Tables:</h2>
+<ul>
+    {{range $key, $val := .Tables}}
+    <li>
+        TableID: {{$val.ID}}
+        Seats: {{$val.Seats}}
+    </li>
+    {{end}}
+</ul>
+<br>
+
+{{else}}
+This restaurant has no tables
+{{end}}
+
+{{else}}
+No restaurant details
+{{end}}
+
+<h2><a href="/restaurants/{{.RestaurantName}}/edit">Edit this Restaurant</a></h2>
+<h2><a href="/restaurants">Return to Restaurants Page</a></h2>
+</body>
+</html>

@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit Restaurant</title>
+</head>
+<body>
+
+<script type="text/JavaScript">
+    var TableID = {{len .Tables}};
+    function createNewElement() {
+        // First create a DIV element.
+        var NewTableEntry = document.createElement('div');
+    
+        // Then add the content (a new input box) of the element.
+        if (TableID < 20) {
+        TableID++;
+        var TableName = "Table"+ TableID.toString();
+        var TableNameSeats = TableName + "Seats";
+        NewTableEntry.innerHTML =
+        "<label for ="+TableNameSeats+">"+TableName+" Seats:</label>"+
+        "<input type='number' name ="+TableNameSeats+" min='1' max='10' required>";
+        // Finally put it where it is supposed to appear.
+        document.getElementById("newElementId").appendChild(NewTableEntry);
+        }
+    }
+
+</script>
+
+<h1>Edit Restaurant</h1>
+<h3>Enter the following details for the restaurant</h3>
+
+<form method="post">
+    <label for ="restaurantname">Restaurant Name:</label>
+    <input type="text" name="restaurantname" placeholder="restaurant name" value={{.RestaurantName}}><br>
+    
+    <div id="dynamictable">
+        <input type="button" value="Add Table" onclick="createNewElement();"/>
+    </div>
+
+{{if .Tables}}
+    {{range $key, $val := .Tables}}
+    <label for = "Table{{$val.ID}}Seats">Table{{$val.ID}} Seats:</label>
+    <input type='number' name ="Table{{$val.ID}}Seats" value={{$val.Seats}} min='1' max='10' required><br>
+    {{end}}
+
+{{else}}
+{{end}}
+     
+    <div id="newElementId">
+    </div>
+    
+    <input type="submit">
+    <input type="reset">
+
+</form>
+
+<br>
+<form action="/restaurants/{{.RestaurantName}}/delete" onsubmit="return confirm('Are you sure you want to delete?');">
+    <input type="submit" value="Delete Restaurant" />
+</form>
+
+<h2><a href="/restaurants">Return to Restaurants Page</a></h2>
+
+</body>
+</html>

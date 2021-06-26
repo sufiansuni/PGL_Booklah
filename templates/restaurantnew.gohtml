@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Create New Restaurant</title>
+</head>
+
+ <script type="text/JavaScript">
+    var TableID = 0;
+    function createNewElement() {
+        // First create a DIV element.
+        var NewTableEntry = document.createElement('div');
+    
+        // Then add the content (a new input box) of the element.
+        if (TableID < 20) {
+        TableID++;
+        var TableName = "Table"+ TableID.toString();
+        var TableNameSeats = TableName + "Seats";
+        NewTableEntry.innerHTML =
+        "<label for ="+TableNameSeats+">"+TableName+" Seats:</label>"+
+        "<input type='number' name ="+TableNameSeats+" min='1' max='10' required>";
+        // Finally put it where it is supposed to appear.
+        document.getElementById("newElementId").appendChild(NewTableEntry);
+        }
+    }
+
+</script>
+
+<body>
+
+<h1>Create New Restaurant</h1>
+<h3>Enter the following details for the new restaurant</h3>
+
+<form method="post">
+    <label for ="restaurantname">Restaurant Name:</label>
+    <input type="text" name="restaurantname" placeholder="restaurant name" required><br>
+
+    <div id="dynamictable">
+        <input type="button" value="Add Table" onclick="createNewElement();"/>
+    </div>
+     
+    <div id="newElementId">
+    </div>
+
+    <input type="submit">
+</form>
+
+<h2><a href="/restaurants">Return to Restaurants Page</a></h2>
+
+</body>
+</html>
