@@ -14,8 +14,9 @@ type restaurant struct {
 }
 
 type table struct {
-	ID    int
-	Seats int
+	ID       int
+	Seats    int
+	Occupied bool
 }
 
 var mapRestaurants = map[string]restaurant{}
@@ -58,8 +59,9 @@ func createNewRestaurant(res http.ResponseWriter, req *http.Request) {
 				var myTable table
 				iString := strconv.Itoa(i)
 				mySeats, _ := strconv.Atoi(req.FormValue("Table" + iString + "Seats"))
+				myOccupied, _ := strconv.ParseBool(req.FormValue("Table" + iString + "Occupied"))
 				if mySeats != 0 {
-					myTable = table{i, mySeats}
+					myTable = table{i, mySeats, myOccupied}
 					myTables = append(myTables, myTable)
 				}
 			}
@@ -111,8 +113,9 @@ func editRestaurant(res http.ResponseWriter, req *http.Request) {
 				var myTable table
 				iString := strconv.Itoa(i)
 				mySeats, _ := strconv.Atoi(req.FormValue("Table" + iString + "Seats"))
+				myOccupied, _ := strconv.ParseBool(req.FormValue("Table" + iString + "Occupied"))
 				if mySeats != 0 {
-					myTable = table{i, mySeats}
+					myTable = table{i, mySeats, myOccupied}
 					myTables = append(myTables, myTable)
 				}
 			}

@@ -16,9 +16,16 @@
         TableID++;
         var TableName = "Table"+ TableID.toString();
         var TableNameSeats = TableName + "Seats";
+        var TableNameOccupied = TableName + "Occupied";
         NewTableEntry.innerHTML =
         "<label for ="+TableNameSeats+">"+TableName+" Seats:</label>"+
-        "<input type='number' name ="+TableNameSeats+" min='1' max='10' required>";
+        "<input type='number' name="+TableNameSeats+" min='1' max='10' required>"+
+        "<label for ="+TableNameOccupied+">Occupied:</label>"+
+        "<select name="+TableNameOccupied+">"+
+        "<option value='true'>Yes</option>"+
+        "<option value='false' selected>No</option>"+
+        "</select>";
+
         // Finally put it where it is supposed to appear.
         document.getElementById("newElementId").appendChild(NewTableEntry);
         }

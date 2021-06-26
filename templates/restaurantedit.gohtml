@@ -17,10 +17,17 @@
         TableID++;
         var TableName = "Table"+ TableID.toString();
         var TableNameSeats = TableName + "Seats";
+        var TableNameOccupied = TableName + "Occupied";
         NewTableEntry.innerHTML =
         "<label for ="+TableNameSeats+">"+TableName+" Seats:</label>"+
-        "<input type='number' name ="+TableNameSeats+" min='1' max='10' required>";
-        // Finally put it where it is supposed to appear.
+        "<input type='number' name="+TableNameSeats+" min='1' max='10' required>"+
+        "<label for ="+TableNameOccupied+">Occupied:</label>"+
+        "<select name="+TableNameOccupied+">"+
+        "<option value='true'>Yes</option>"+
+        "<option value='false' selected>No</option>"+
+        "</select>";
+
+       // Finally put it where it is supposed to appear.
         document.getElementById("newElementId").appendChild(NewTableEntry);
         }
     }
@@ -41,7 +48,20 @@
 {{if .Tables}}
     {{range $key, $val := .Tables}}
     <label for = "Table{{$val.ID}}Seats">Table{{$val.ID}} Seats:</label>
-    <input type='number' name ="Table{{$val.ID}}Seats" value={{$val.Seats}} min='1' max='10' required><br>
+    <input type='number' name ="Table{{$val.ID}}Seats" value={{$val.Seats}} min='1' max='10' required>
+    
+    <label for="Table{{$val.ID}}Occupied"> Occupied:</label>
+    <select name="Table{{$val.ID}}Occupied">
+    {{if $val.Occupied}}
+        <option value="true" selected>Yes</option>
+        <option value="false">No</option>
+    {{else}}
+        <option value="true">Yes</option>
+        <option value="false" selected>No</option> 
+    {{end}}
+    </select>
+    <br>
+
     {{end}}
 
 {{else}}
