@@ -10,10 +10,19 @@
 {{if .}}
 <h2>Restaurant Details:</h2>
 Restaurant Name: {{.RestaurantName}}<br>
-Available Tables: {{.A_Tables}}<br>
+
 
 {{if .Tables}}
-{{.Tables}}
+<h2>List of Tables:</h2>
+<ul>
+    {{range $key, $val := .Tables}}
+    <li>
+        TableID: {{$val.ID}}
+        Seats: {{$val.Seats}}
+    </li>
+    {{end}}
+</ul>
+<br>
 
 {{else}}
 This restaurant has no tables
@@ -23,8 +32,7 @@ This restaurant has no tables
 No restaurant details
 {{end}}
 
-
-<h2><a href="/restaurants/{{.RestaurantName}}/tables">Manage Tables</a></h2>
+<h2><a href="/restaurants/{{.RestaurantName}}/edit">Edit this Restaurant</a></h2>
 
 </body>
 </html>
