@@ -1,1 +1,0 @@
-docker run -d -p 8081:3306 -e MYSQL_ROOT_PASSWORD=password -v c:\DockerDatabases\BooklahDatabase\:/var/lib/mysql --name BooklahDatabase mysql:latest
