@@ -3,23 +3,45 @@ package main
 import (
 	"fmt"
 	"net/http"
-	"strconv"
+	"time"
 
 	"github.com/gorilla/mux"
 )
 
 type restaurant struct {
-	RestaurantName string
-	Tables         []table
+	RestaurantName string //primary key
+	createdAt      time.Time
+	updatedAt      time.Time
+	deletedAt      time.Time
+	//address
+	//hours
+	//contact
+	//summary
 }
 
 type table struct {
-	ID       int
-	Seats    int
-	Occupied bool
+	TableID        int //primary key
+	RestaurantName string //foreign key
+	TableIndex     int
+	Seats          int
+	createdAt      time.Time
+	updatedAt      time.Time
+	deletedAt      time.Time
 }
 
-var mapRestaurants = map[string]restaurant{}
+type booking struct {
+	BookingID      int    //primary key
+	Username       string //foreign key
+	RestaurantName string //foreign key
+	Pax            int
+	StartTime      time.Time
+	EndTime        time.Time
+	Status         string
+	TableID        int //foreign key
+	createdAt      time.Time
+	updatedAt      time.Time
+	deletedAt      time.Time
+}
 
 func indexRestaurant(res http.ResponseWriter, req *http.Request) {
 	// if alreadyLoggedIn(req) {
@@ -42,7 +64,7 @@ func createNewRestaurant(res http.ResponseWriter, req *http.Request) {
 	// }
 
 	var myRestaurant restaurant
-	var myTables []table
+	// var myTables []table
 	// process form submission
 	if req.Method == http.MethodPost {
 		// get form values
@@ -55,18 +77,18 @@ func createNewRestaurant(res http.ResponseWriter, req *http.Request) {
 				return
 			}
 
-			for i := 1; i < 21; i++ {
-				var myTable table
-				iString := strconv.Itoa(i)
-				mySeats, _ := strconv.Atoi(req.FormValue("Table" + iString + "Seats"))
-				myOccupied, _ := strconv.ParseBool(req.FormValue("Table" + iString + "Occupied"))
-				if mySeats != 0 {
-					myTable = table{i, mySeats, myOccupied}
-					myTables = append(myTables, myTable)
-				}
-			}
+			// for i := 1; i < 21; i++ {
+			// 	var myTable table
+			// 	iString := strconv.Itoa(i)
+			// 	mySeats, _ := strconv.Atoi(req.FormValue("Table" + iString + "Seats"))
+			// 	myOccupied, _ := strconv.ParseBool(req.FormValue("Table" + iString + "Occupied"))
+			// 	if mySeats != 0 {
+			// 		myTable = table{i, mySeats, myOccupied}
+			// 		myTables = append(myTables, myTable)
+			// 	}
+			// }
 
-			myRestaurant = restaurant{restaurantname, myTables}
+			myRestaurant = restaurant{RestaurantName: restaurantname}
 			mapRestaurants[restaurantname] = myRestaurant
 			fmt.Println("New Restaurant Created:", myRestaurant.RestaurantName)
 			fmt.Println(mapRestaurants[restaurantname])
@@ -94,7 +116,7 @@ func editRestaurant(res http.ResponseWriter, req *http.Request) {
 	//retrieve initial data
 	params := mux.Vars(req)
 	myRestaurant := mapRestaurants[params["restaurantname"]]
-	var myTables []table
+	// var myTables []table
 
 	// process form submission
 	if req.Method == http.MethodPost {
@@ -109,19 +131,19 @@ func editRestaurant(res http.ResponseWriter, req *http.Request) {
 				}
 			}
 
-			for i := 1; i < 21; i++ {
-				var myTable table
-				iString := strconv.Itoa(i)
-				mySeats, _ := strconv.Atoi(req.FormValue("Table" + iString + "Seats"))
-				myOccupied, _ := strconv.ParseBool(req.FormValue("Table" + iString + "Occupied"))
-				if mySeats != 0 {
-					myTable = table{i, mySeats, myOccupied}
-					myTables = append(myTables, myTable)
-				}
-			}
+			// for i := 1; i < 21; i++ {
+			// 	var myTable table
+			// 	iString := strconv.Itoa(i)
+			// 	mySeats, _ := strconv.Atoi(req.FormValue("Table" + iString + "Seats"))
+			// 	myOccupied, _ := strconv.ParseBool(req.FormValue("Table" + iString + "Occupied"))
+			// 	if mySeats != 0 {
+			// 		myTable = table{i, mySeats, myOccupied}
+			// 		myTables = append(myTables, myTable)
+			// 	}
+			// }
 
 			myRestaurant.RestaurantName = restaurantname
-			myRestaurant.Tables = myTables
+			// myRestaurant.Tables = myTables
 			mapRestaurants[restaurantname] = myRestaurant
 
 			if params["restaurantname"] != restaurantname {
