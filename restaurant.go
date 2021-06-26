@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/mux"
 )
@@ -10,12 +11,11 @@ import (
 type restaurant struct {
 	RestaurantName string
 	Tables         []table
-	A_Tables       int //available tables
 }
 
 type table struct {
-	Seats  int
-	Status string
+	ID    int
+	Seats int
 }
 
 var mapRestaurants = map[string]restaurant{}
@@ -26,13 +26,12 @@ func indexRestaurant(res http.ResponseWriter, req *http.Request) {
 	// 	return
 	// }
 
-	refreshTables(mapRestaurants)
 	data := struct {
 		RestaurantList map[string]restaurant
 	}{
 		mapRestaurants,
 	}
-	tpl.ExecuteTemplate(res, "restaurants.html", data)
+	tpl.ExecuteTemplate(res, "restaurants.gohtml", data)
 }
 
 func createNewRestaurant(res http.ResponseWriter, req *http.Request) {
@@ -47,6 +46,7 @@ func createNewRestaurant(res http.ResponseWriter, req *http.Request) {
 	if req.Method == http.MethodPost {
 		// get form values
 		restaurantname := req.FormValue("restaurantname")
+
 		if restaurantname != "" {
 			// check if restaurant exist/ taken
 			if _, ok := mapRestaurants[restaurantname]; ok {
@@ -54,8 +54,19 @@ func createNewRestaurant(res http.ResponseWriter, req *http.Request) {
 				return
 			}
 
-			myRestaurant = restaurant{restaurantname, myTables, 0}
+			for i := 1; i < 21; i++ {
+				var myTable table
+				iString := strconv.Itoa(i)
+				mySeats, _ := strconv.Atoi(req.FormValue("Table" + iString + "Seats"))
+				if mySeats != 0 {
+					myTable = table{i, mySeats}
+					myTables = append(myTables, myTable)
+				}
+			}
+
+			myRestaurant = restaurant{restaurantname, myTables}
 			mapRestaurants[restaurantname] = myRestaurant
+			fmt.Println("New Restaurant Created:", myRestaurant.RestaurantName)
 			fmt.Println(mapRestaurants[restaurantname])
 		}
 		// redirect to main index
@@ -63,13 +74,13 @@ func createNewRestaurant(res http.ResponseWriter, req *http.Request) {
 		return
 
 	}
-	tpl.ExecuteTemplate(res, "restaurantnew.html", myRestaurant)
+	tpl.ExecuteTemplate(res, "restaurantnew.gohtml", myRestaurant)
 }
 
 func viewRestaurant(res http.ResponseWriter, req *http.Request) {
 	params := mux.Vars(req)
 	myRestaurant := mapRestaurants[params["restaurantname"]]
-	tpl.ExecuteTemplate(res, "restaurantpage.html", myRestaurant)
+	tpl.ExecuteTemplate(res, "restaurantpage.gohtml", myRestaurant)
 }
 
 func editRestaurant(res http.ResponseWriter, req *http.Request) {
@@ -77,6 +88,52 @@ func editRestaurant(res http.ResponseWriter, req *http.Request) {
 	// 	http.Redirect(res, req, "/", http.StatusSeeOther)
 	// 	return
 	// }
+
+	//retrieve initial data
+	params := mux.Vars(req)
+	myRestaurant := mapRestaurants[params["restaurantname"]]
+	var myTables []table
+
+	// process form submission
+	if req.Method == http.MethodPost {
+		// get form values
+		restaurantname := req.FormValue("restaurantname")
+		if restaurantname != "" {
+			// check if restaurant exist/ taken
+			if _, ok := mapRestaurants[restaurantname]; ok {
+				if params["restaurantname"] != restaurantname {
+					http.Error(res, "Restaurant name already taken", http.StatusForbidden)
+					return
+				}
+			}
+
+			for i := 1; i < 21; i++ {
+				var myTable table
+				iString := strconv.Itoa(i)
+				mySeats, _ := strconv.Atoi(req.FormValue("Table" + iString + "Seats"))
+				if mySeats != 0 {
+					myTable = table{i, mySeats}
+					myTables = append(myTables, myTable)
+				}
+			}
+
+			myRestaurant.RestaurantName = restaurantname
+			myRestaurant.Tables = myTables
+			mapRestaurants[restaurantname] = myRestaurant
+
+			if params["restaurantname"] != restaurantname {
+				delete(mapRestaurants, params["restaurantname"])
+				fmt.Println(params["restaurantname"], "updated to", myRestaurant.RestaurantName)
+			} else {
+				fmt.Println(params["restaurantname"], "updated")
+			}
+			fmt.Println(mapRestaurants[restaurantname])
+		}
+		// redirect to main index
+		http.Redirect(res, req, "/restaurants/"+restaurantname, http.StatusSeeOther)
+		return
+	}
+	tpl.ExecuteTemplate(res, "restaurantedit.gohtml", myRestaurant)
 }
 
 func deleteRestaurant(res http.ResponseWriter, req *http.Request) {
@@ -84,16 +141,7 @@ func deleteRestaurant(res http.ResponseWriter, req *http.Request) {
 	// 	http.Redirect(res, req, "/", http.StatusSeeOther)
 	// 	return
 	// }
-}
-
-func refreshTables(restaurantmap map[string]restaurant) {
-	for _, v := range restaurantmap {
-		count := 0
-		for _, tables := range v.Tables {
-			if tables.Status == "Available" {
-				count++
-			}
-		}
-		v.A_Tables = count
-	}
+	params := mux.Vars(req)
+	delete(mapRestaurants, params["restaurantname"])
+	fmt.Println(params["restaurantname"], "deleted")
 }
