@@ -3,32 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <title>Create Account</title>
-    
 </head>
 <body>
 
 <h1>Create New Account</h1>
 <h3>Enter the following to create a new account</h3>
-<form method="post" action="/signup" autocomplete="off">
-<label for ="firstname">First name:</label>
-<input type="text" name="firstname" required placeholder="first name"><br>
-<label for ="lastname">Last name:</label>
-<input type="text" name="lastname" required placeholder="last name"><br>
-<label for ="username">Username:</label>
-<input type="text" name="username" required placeholder="username"><br>
-<label for ="password">Password:</label>
-<input type="text" name="password" required placeholder="password"><br>
-<label for ="contact">Contact:</label>
-<input type="text" name="Contact" required placeholder="contact"><br>
-<label for ="email">Email:</label>
-<input type="text" name="Email" required placeholder="email"><br>
-<label for="vaccination">Vaccination Status:</label>
-<select id="vaccination" name="vaccination">
-<option value="Yes">Yes</option>
-<option value="No">No</option>
-<option value="Nil">I do not wish to say</option>
-</select>    
-<input type="submit">
+<form method="post">
+    <label for ="username">Username:</label>
+    <input type="text" name="username" placeholder="username"><br>
+    <label for ="password">Password:</label>
+    <input type="text" name="password" placeholder="password"><br>
+    <input type="submit">
 </form>
 
 </body>
