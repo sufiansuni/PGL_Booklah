@@ -11,6 +11,7 @@
 <h2>Restaurant Details:</h2>
 Restaurant Name: {{.RestaurantName}}<br>
 
+
 {{if .Tables}}
 <h2>List of Tables:</h2>
 <ul>
@@ -30,7 +31,6 @@ This restaurant has no tables
 {{else}}
 No restaurant details
 {{end}}
-
 
 <h2><a href="/restaurants/{{.RestaurantName}}/edit">Edit this Restaurant</a></h2>
 

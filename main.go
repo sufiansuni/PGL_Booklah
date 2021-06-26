@@ -40,8 +40,12 @@ func main() {
 	r.HandleFunc("/restaurants", indexRestaurant)
 	r.HandleFunc("/restaurants/new", createNewRestaurant)
 	r.HandleFunc("/restaurants/{restaurantname}", viewRestaurant)
-	r.HandleFunc("/restaurants/{restaurantname}/edit", editRestaurant)
-	r.HandleFunc("/restaurants/{restaurantname}/delete", deleteRestaurant)
+	r.HandleFunc("/restaurants/{restaurantname}/edit/", editRestaurant)
+	r.HandleFunc("/restaurants/{restaurantname}/delete/", deleteRestaurant)
+	
+	r.HandleFunc("/cMenu", cMenu)
+	r.HandleFunc("/adminMenu", adminMenu)
+
 
 	log.Fatal(http.ListenAndServe(":8080", r))
 }

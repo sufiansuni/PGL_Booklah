@@ -7,9 +7,9 @@
 <body>
 
 <h1>Please login to your account</h1>
-<form method="post">
-    <input type="text" name="username" placeholder="username"><br>
-    <input type="password" name="password" placeholder="password"><br>
+<form method="post" action="/login" autocomplete="off" >
+    <input type="text" name="username" required placeholder="username"><br>
+    <input type="password" name="password" required placeholder="password"><br>
     <input type="submit">
 </form>
 <h2>Or <a href="/signup">Sign Up</a> if you do not have an account</h2>
