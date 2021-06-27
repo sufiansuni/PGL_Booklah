@@ -6,9 +6,6 @@ import (
 
 var tpl *template.Template
 
-var mapRestaurants = map[string]restaurant{}
-var mapBookings = map[string]booking{}
-
 func init() {
 	tpl = template.Must(template.ParseGlob("templates/*"))
 }

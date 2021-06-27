@@ -11,7 +11,7 @@ import (
 )
 
 type user struct {
-	Username  string //primarykey
+	Username  string //primary key
 	Password  []byte
 	Type      string
 	createdAt time.Time
@@ -159,14 +159,11 @@ func login(res http.ResponseWriter, req *http.Request) {
 			fmt.Println(err)
 		} else {
 			fmt.Println("Session Created")
-
 			http.Redirect(res, req, "/", http.StatusSeeOther)
-			return
 		}
-
-		tpl.ExecuteTemplate(res, "login.gohtml", nil)
+		return
 	}
-
+	tpl.ExecuteTemplate(res, "login.gohtml", nil)
 }
 
 func logout(res http.ResponseWriter, req *http.Request) {
@@ -238,11 +235,15 @@ func alreadyLoggedIn(req *http.Request) bool {
 	var query string
 
 	err = db.QueryRow("SELECT Username FROM sessions WHERE UUID=? AND deletedAt IS NULL", myCookie.Value).Scan(&query)
-	if err != nil {
+	if err == sql.ErrNoRows {
+		//
+	} else if err != nil {
 		fmt.Print(err)
 	} else {
 		err = db.QueryRow("SELECT Username FROM users WHERE Username=? AND deletedAt IS NULL", query).Scan(&query)
-		if err != nil {
+		if err == sql.ErrNoRows {
+			//
+		} else if err != nil {
 			fmt.Print(err)
 		} else {
 			return true

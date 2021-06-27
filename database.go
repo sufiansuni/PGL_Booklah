@@ -110,8 +110,8 @@ func createTableTable() {
 	} else {
 		fmt.Println("Table Checked/Created: tables")
 	}
-
 }
+
 func createBookingTable() {
 	_, err := db.Exec("CREATE TABLE IF NOT EXISTS " +
 		"bookings" +
@@ -134,16 +134,4 @@ func createBookingTable() {
 	} else {
 		fmt.Println("Table Checked/Created: bookings")
 	}
-}
-
-//example of database use
-func getUser(username string) user {
-	var myUser user
-	// Execute the query
-	err := db.QueryRow("SELECT * FROM user where username = ?", username).Scan(&myUser)
-	if err != nil {
-		panic(err.Error()) // proper error handling instead of panic in your app
-	}
-
-	return myUser
 }

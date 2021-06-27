@@ -19,6 +19,18 @@ type restaurant struct {
 	//summary
 }
 
+// Potential New Staff Management Feature 
+
+// type staff struct {
+// 	ID             int    //primarykey
+// 	Username       string //foreign key
+// 	RestaurantName string //foreign key
+// 	Position       string
+// 	createdAt      time.Time
+// 	updatedAt      time.Time
+// 	deletedAt      time.Time
+// }
+
 type table struct {
 	TableID        int //primary key
 	RestaurantName string //foreign key
@@ -42,6 +54,9 @@ type booking struct {
 	updatedAt      time.Time
 	deletedAt      time.Time
 }
+
+var mapRestaurants = map[string]restaurant{}
+var mapBookings = map[string]booking{}
 
 func indexRestaurant(res http.ResponseWriter, req *http.Request) {
 	// if alreadyLoggedIn(req) {
