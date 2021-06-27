@@ -6,28 +6,22 @@
 </head>
 
  <script type="text/JavaScript">
-    var TableID = 0;
+    var TableIndex = 1;
     function createNewElement() {
         // First create a DIV element.
         var NewTableEntry = document.createElement('div');
-    
         // Then add the content (a new input box) of the element.
-        if (TableID < 20) {
-        TableID++;
-        var TableName = "Table"+ TableID.toString();
-        var TableNameSeats = TableName + "Seats";
-        var TableNameOccupied = TableName + "Occupied";
+        if (TableIndex < 21) {
+        var TableName = "table"+ TableIndex.toString();
+        var TableNameSeats = TableName + "seats";
         NewTableEntry.innerHTML =
         "<label for ="+TableNameSeats+">"+TableName+" Seats:</label>"+
         "<input type='number' name="+TableNameSeats+" min='1' max='10' required>"+
-        "<label for ="+TableNameOccupied+">Occupied:</label>"+
-        "<select name="+TableNameOccupied+">"+
-        "<option value='true'>Yes</option>"+
-        "<option value='false' selected>No</option>"+
-        "</select>";
+        "<input type='hidden' name="+TableName+" value="+TableIndex+">";
 
         // Finally put it where it is supposed to appear.
         document.getElementById("newElementId").appendChild(NewTableEntry);
+        TableIndex++;
         }
     }
 
@@ -35,6 +29,7 @@
 
 <body>
 
+{{if eq .Type "admin"}}
 <h1>Create New Restaurant</h1>
 <h3>Enter the following details for the new restaurant</h3>
 
@@ -51,6 +46,10 @@
 
     <input type="submit">
 </form>
+
+{{else}}
+Only admin accounts can add restaurants
+{{end}}
 
 <h2><a href="/restaurants">Return to Restaurants Page</a></h2>
 <h2><a href="/">Return to Main Page</a></h2>

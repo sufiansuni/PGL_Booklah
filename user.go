@@ -14,17 +14,11 @@ type user struct {
 	Username  string //primary key
 	Password  []byte
 	Type      string
-	createdAt time.Time
-	updatedAt time.Time
-	deletedAt time.Time
 }
 
 type session struct {
 	UUID      string //primary key
 	Username  string //foreign key
-	createdAt time.Time
-	updatedAt time.Time
-	deletedAt time.Time
 }
 
 // The following maps are no longer used
@@ -87,7 +81,10 @@ func signup(res http.ResponseWriter, req *http.Request) {
 				Value: id.String(),
 			}
 			http.SetCookie(res, myCookie)
-			err = insertSession(myCookie.Value, username) // previously: mapSessions[myCookie.Value] = username
+
+			mySession := session{myCookie.Value, username}
+
+			err = insertSession(mySession) // previously: mapSessions[myCookie.Value] = username
 			if err != nil {
 				fmt.Println(err)
 			} else {
@@ -159,13 +156,16 @@ func login(res http.ResponseWriter, req *http.Request) {
 			Value: id.String(),
 		}
 		http.SetCookie(res, myCookie)
-		err = insertSession(myCookie.Value, username) // previously: mapSessions[myCookie.Value] = username
+
+		mySession := session{myCookie.Value, username}
+		err = insertSession(mySession) // previously: mapSessions[myCookie.Value] = username
 		if err != nil {
 			fmt.Println(err)
 		} else {
 			fmt.Println("Session Created")
-			http.Redirect(res, req, "/", http.StatusSeeOther)
 		}
+		
+		http.Redirect(res, req, "/", http.StatusSeeOther)
 		return
 	}
 	tpl.ExecuteTemplate(res, "login.gohtml", nil)
@@ -271,9 +271,9 @@ func insertUser(myUser user) error {
 	return nil
 }
 
-func insertSession(cookievalue string, username string) error {
+func insertSession(mySession session) error {
 	_, err := db.Exec("INSERT INTO sessions(UUID, Username, createdAt) VALUES(?, ?, ?)",
-		cookievalue, username, time.Now())
+		mySession.UUID, mySession.Username, time.Now())
 	if err != nil {
 		return err
 	}

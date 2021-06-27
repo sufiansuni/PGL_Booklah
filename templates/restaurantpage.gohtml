@@ -5,19 +5,18 @@
     <title>Restaurants</title>
 </head>
 <body>
-<h1>Welcome to {{.RestaurantName}}</h1>
+<h1>Welcome to {{.Restaurant.RestaurantName}}</h1>
 
-{{if .}}
+{{if .Restaurant}}
 <h2>Restaurant Details:</h2>
-Restaurant Name: {{.RestaurantName}}<br>
-
+Restaurant Name: {{.Restaurant.RestaurantName}}<br>
 
 {{if .Tables}}
 <h2>List of Tables:</h2>
 <ul>
     {{range $key, $val := .Tables}}
     <li>
-        TableID: {{$val.ID}}
+        TableIndex: {{$val.TableIndex}}
         Seats: {{$val.Seats}}
     </li>
     {{end}}
@@ -32,7 +31,12 @@ This restaurant has no tables
 No restaurant details
 {{end}}
 
-<h2><a href="/restaurants/{{.RestaurantName}}/edit">Edit this Restaurant</a></h2>
+{{if eq .User.Type "admin"}}
+<h2><a href="/restaurants/{{.Restaurant.RestaurantName}}/edit">Edit this Restaurant</a></h2>
+
+{{else}}
+{{end}}
+
 <h2><a href="/restaurants">Return to Restaurants Page</a></h2>
 <h2><a href="/">Return to Main Page</a></h2>
 </body>
