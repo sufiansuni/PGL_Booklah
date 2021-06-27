@@ -6,40 +6,44 @@
 </head>
 <body>
 
-<script type="text/JavaScript">
-    var TableID = {{len .Tables}};
+ <script type="text/JavaScript">
+    var TableIndex = 1;
+    var checker = 1;
     function createNewElement() {
+        TableIndex = 1;
+        checker = 1;
+        {{range $key, $val := .Tables}}
+        if ({{$key}} == TableIndex) {
+            checker = TableIndex;
+        }
+        TableIndex++;
+        {{end}}
+
         // First create a DIV element.
         var NewTableEntry = document.createElement('div');
-    
         // Then add the content (a new input box) of the element.
-        if (TableID < 20) {
-        TableID++;
-        var TableName = "Table"+ TableID.toString();
-        var TableNameSeats = TableName + "Seats";
-        var TableNameOccupied = TableName + "Occupied";
+        if (TableIndex < 21) {
+        var TableName = "table"+ TableIndex.toString();
+        var TableNameSeats = TableName + "seats";
         NewTableEntry.innerHTML =
         "<label for ="+TableNameSeats+">"+TableName+" Seats:</label>"+
         "<input type='number' name="+TableNameSeats+" min='1' max='10' required>"+
-        "<label for ="+TableNameOccupied+">Occupied:</label>"+
-        "<select name="+TableNameOccupied+">"+
-        "<option value='true'>Yes</option>"+
-        "<option value='false' selected>No</option>"+
-        "</select>";
+        "<input type='hidden' name="+TableName+" value="+TableIndex+">";
 
-       // Finally put it where it is supposed to appear.
+        // Finally put it where it is supposed to appear.
         document.getElementById("newElementId").appendChild(NewTableEntry);
         }
     }
 
 </script>
 
+{{if eq .User.Type "admin"}}
 <h1>Edit Restaurant</h1>
 <h3>Enter the following details for the restaurant</h3>
 
 <form method="post">
     <label for ="restaurantname">Restaurant Name:</label>
-    <input type="text" name="restaurantname" placeholder="restaurant name" value={{.RestaurantName}}><br>
+    <input type="text" name="restaurantname" placeholder="restaurant name" value={{.Restaurant.RestaurantName}}><br>
     
     <div id="dynamictable">
         <input type="button" value="Add Table" onclick="createNewElement();"/>
@@ -47,21 +51,10 @@
 
 {{if .Tables}}
     {{range $key, $val := .Tables}}
-    <label for = "Table{{$val.ID}}Seats">Table{{$val.ID}} Seats:</label>
-    <input type='number' name ="Table{{$val.ID}}Seats" value={{$val.Seats}} min='1' max='10' required>
-    
-    <label for="Table{{$val.ID}}Occupied"> Occupied:</label>
-    <select name="Table{{$val.ID}}Occupied">
-    {{if $val.Occupied}}
-        <option value="true" selected>Yes</option>
-        <option value="false">No</option>
-    {{else}}
-        <option value="true">Yes</option>
-        <option value="false" selected>No</option> 
-    {{end}}
-    </select>
+    <label for ="table{{$val.TableIndex}}seats">Table{{$val.TableIndex}} Seats:</label>
+    <input type="number" name="table{{$val.TableIndex}}seats" min='1' max='10' value={{$val.Seats}} required>
+    <input type="hidden" name="table{{$val.TableIndex}}" value={{$val.TableIndex}}>
     <br>
-
     {{end}}
 
 {{else}}
@@ -76,9 +69,14 @@
 </form>
 
 <br>
-<form action="/restaurants/{{.RestaurantName}}/delete" onsubmit="return confirm('Are you sure you want to delete?');">
+<form action="/restaurants/{{.Restaurant.RestaurantName}}/delete" onsubmit="return confirm('Are you sure you want to delete?');">
     <input type="submit" value="Delete Restaurant" />
 </form>
+
+{{else}}
+Only admin accounts are allowed to edit restaurants
+
+{{end}}
 
 <h2><a href="/restaurants">Return to Restaurants Page</a></h2>
 

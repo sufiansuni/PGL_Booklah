@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -11,9 +12,6 @@ import (
 
 type restaurant struct {
 	RestaurantName string //primary key
-	createdAt      time.Time
-	updatedAt      time.Time
-	deletedAt      time.Time
 	//address
 	//hours
 	//contact
@@ -37,9 +35,6 @@ type table struct {
 	RestaurantName string //foreign key
 	TableIndex     int
 	Seats          int
-	createdAt      time.Time
-	updatedAt      time.Time
-	deletedAt      time.Time
 }
 
 type booking struct {
@@ -51,9 +46,6 @@ type booking struct {
 	EndTime        time.Time
 	Status         string
 	TableID        int //foreign key
-	createdAt      time.Time
-	updatedAt      time.Time
-	deletedAt      time.Time
 }
 
 var mapRestaurants = map[string]restaurant{}
@@ -69,17 +61,16 @@ func indexRestaurant(res http.ResponseWriter, req *http.Request) {
 
 	results, err := db.Query(query)
 	if err != nil {
-		if err != sql.ErrNoRows {
-			fmt.Println(err)
+		panic("error executing sql select")
+	}
+
+	defer results.Close()
+	for results.Next() {
+		err := results.Scan(&myRestaurant.RestaurantName)
+		if err != nil {
+			panic("error getting results from sql select")
 		}
-	} else {
-		if results.Next() {
-			err := results.Scan(&myRestaurant.RestaurantName)
-			if err != nil {
-				panic("error getting results from sql select")
-			}
-			myRestaurants[myRestaurant.RestaurantName] = myRestaurant
-		}
+		myRestaurants[myRestaurant.RestaurantName] = myRestaurant
 	}
 
 	data := struct {
@@ -96,7 +87,7 @@ func createNewRestaurant(res http.ResponseWriter, req *http.Request) {
 	myUser := checkUser(res, req)
 
 	var myRestaurant restaurant
-	// var myTables []table
+
 	// process form submission
 	if req.Method == http.MethodPost {
 		// get form values
@@ -119,7 +110,7 @@ func createNewRestaurant(res http.ResponseWriter, req *http.Request) {
 				return
 			}
 
-			myRestaurant = restaurant{RestaurantName: restaurantname}
+			myRestaurant.RestaurantName = restaurantname
 			err = insertRestaurant(myRestaurant) //previously: mapRestaurants[restaurantname] = myRestaurant
 			if err != nil {
 				fmt.Println(err)
@@ -127,38 +118,114 @@ func createNewRestaurant(res http.ResponseWriter, req *http.Request) {
 				fmt.Println("New Restaurant Created:", myRestaurant.RestaurantName)
 			}
 
+			for i := 1; i < 21; i++ {
+				var myTable table
+				iString := strconv.Itoa(i)
+				myTable.RestaurantName = restaurantname
+
+				tableindexform := req.FormValue("table" + iString)
+				if tableindexform != "" {
+					myTable.TableIndex, err = strconv.Atoi(tableindexform)
+					if err != nil {
+						fmt.Println(err)
+					}
+
+					tableseatsform := req.FormValue("table" + iString + "seats")
+					if tableseatsform != "" {
+						myTable.Seats, err = strconv.Atoi(tableseatsform)
+						if err != nil {
+							fmt.Println(err)
+						}
+
+						err = insertTable(myTable)
+						if err != nil {
+							fmt.Println(err)
+						} else {
+							fmt.Println("Table Created for", restaurantname)
+						}
+					}
+				}
+			}
 		}
 		// redirect to main index
 		http.Redirect(res, req, "/restaurants", http.StatusSeeOther)
 		return
-
 	}
-	data := struct {
-		User       user
-		Restaurant restaurant
-	}{
-		myUser,
-		myRestaurant,
-	}
-	tpl.ExecuteTemplate(res, "restaurantnew.gohtml", data)
+	tpl.ExecuteTemplate(res, "restaurantnew.gohtml", myUser)
 }
 
 func viewRestaurant(res http.ResponseWriter, req *http.Request) {
+	myUser := checkUser(res, req)
+
 	params := mux.Vars(req)
-	myRestaurant := mapRestaurants[params["restaurantname"]]
-	tpl.ExecuteTemplate(res, "restaurantpage.gohtml", myRestaurant)
+
+	var myRestaurant restaurant
+	var myTables = map[int]table{}
+
+	myRestaurant, err := getRestaurant(params["restaurantname"])
+	if err != nil {
+		if err != sql.ErrNoRows {
+			http.Error(res, "Internal server error", http.StatusInternalServerError)
+			return
+		} else {
+			http.Error(res, "Restaurant Doesnt Exist", http.StatusForbidden)
+			return
+		}
+	}
+
+	myTables, err = getTables(params["restaurantname"])
+	if err != nil {
+		if err != sql.ErrNoRows {
+			http.Error(res, "Internal server error", http.StatusInternalServerError)
+			return
+		} else {
+			http.Error(res, "Tables Doesnt Exist", http.StatusForbidden)
+			return
+		}
+	}
+
+	data := struct {
+		User       user
+		Restaurant restaurant
+		Tables     map[int]table
+	}{
+		myUser,
+		myRestaurant,
+		myTables,
+	}
+	tpl.ExecuteTemplate(res, "restaurantpage.gohtml", data)
 }
 
 func editRestaurant(res http.ResponseWriter, req *http.Request) {
-	// if alreadyLoggedIn(req) {
-	// 	http.Redirect(res, req, "/", http.StatusSeeOther)
-	// 	return
-	// }
+	myUser := checkUser(res, req)
 
 	//retrieve initial data
 	params := mux.Vars(req)
-	myRestaurant := mapRestaurants[params["restaurantname"]]
-	// var myTables []table
+
+	var myRestaurant restaurant
+	var myTables = map[int]table{}
+
+	myRestaurant, err := getRestaurant(params["restaurantname"])
+	if err != nil {
+		if err != sql.ErrNoRows {
+			http.Error(res, "Internal server error", http.StatusInternalServerError)
+			return
+		} else {
+			http.Error(res, "Restaurant Doesnt Exist", http.StatusForbidden)
+			return
+		}
+	}
+
+	myTables, err = getTables(params["restaurantname"])
+	if err != nil {
+		if err != sql.ErrNoRows {
+			http.Error(res, "Internal server error", http.StatusInternalServerError)
+			return
+		} else {
+			http.Error(res, "Tables Doesnt Exist", http.StatusForbidden)
+			return
+		}
+	}
 
 	// process form submission
 	if req.Method == http.MethodPost {
@@ -166,41 +233,71 @@ func editRestaurant(res http.ResponseWriter, req *http.Request) {
 		restaurantname := req.FormValue("restaurantname")
 		if restaurantname != "" {
 			// check if restaurant exist/ taken
-			if _, ok := mapRestaurants[restaurantname]; ok {
-				if params["restaurantname"] != restaurantname {
-					http.Error(res, "Restaurant name already taken", http.StatusForbidden)
+
+			restaurantCheck, err := getRestaurant(restaurantname)
+			if err != nil {
+				if err != sql.ErrNoRows {
+					http.Error(res, "Internal server error", http.StatusInternalServerError)
+					return
+				}
+			} else {
+				if restaurantCheck.RestaurantName != params["restaurantname"] {
+					http.Error(res, "Restaurant already taken", http.StatusForbidden)
 					return
 				}
 			}
 
-			// for i := 1; i < 21; i++ {
-			// 	var myTable table
-			// 	iString := strconv.Itoa(i)
-			// 	mySeats, _ := strconv.Atoi(req.FormValue("Table" + iString + "Seats"))
-			// 	myOccupied, _ := strconv.ParseBool(req.FormValue("Table" + iString + "Occupied"))
-			// 	if mySeats != 0 {
-			// 		myTable = table{i, mySeats, myOccupied}
-			// 		myTables = append(myTables, myTable)
-			// 	}
-			// }
-
-			myRestaurant.RestaurantName = restaurantname
-			// myRestaurant.Tables = myTables
-			mapRestaurants[restaurantname] = myRestaurant
-
-			if params["restaurantname"] != restaurantname {
-				delete(mapRestaurants, params["restaurantname"])
-				fmt.Println(params["restaurantname"], "updated to", myRestaurant.RestaurantName)
-			} else {
-				fmt.Println(params["restaurantname"], "updated")
+			statement := "UPDATE restaurants SET RestaurantName=?, updatedAt=? WHERE RestaurantName=?"
+			_, err = db.Exec(statement, restaurantname, time.Now(), params["restaurantname"])
+			if err != nil {
+				http.Error(res, "Internal server error", http.StatusInternalServerError)
+				return
 			}
-			fmt.Println(mapRestaurants[restaurantname])
+
+			for i := 1; i < 21; i++ {
+				iString := strconv.Itoa(i)
+				newTableIndex := req.FormValue("table" + iString)
+				newTableSeats := req.FormValue("table" + iString + "seats")
+
+				if newTableIndex != "" && newTableSeats != "" {
+					newTableIndexConv, err := strconv.Atoi(newTableIndex)
+					if err != nil {
+						http.Error(res, "Internal server error", http.StatusInternalServerError)
+					}
+
+					newTableSeatsConv, err := strconv.Atoi(newTableSeats)
+					if err != nil {
+						http.Error(res, "Internal server error", http.StatusInternalServerError)
+					}
+
+					statement := "UPDATE tables SET Seats=?, updatedAt=? WHERE RestaurantName=? AND TableIndex=?"
+					_, err = db.Exec(statement,
+						newTableSeatsConv,
+						time.Now(),
+						restaurantname,
+						newTableIndexConv)
+					if err != nil {
+						http.Error(res, "Internal server error", http.StatusInternalServerError)
+						return
+					}
+
+				}
+			}
 		}
 		// redirect to main index
 		http.Redirect(res, req, "/restaurants/"+restaurantname, http.StatusSeeOther)
 		return
 	}
-	tpl.ExecuteTemplate(res, "restaurantedit.gohtml", myRestaurant)
+	data := struct {
+		User       user
+		Restaurant restaurant
+		Tables     map[int]table
+	}{
+		myUser,
+		myRestaurant,
+		myTables,
+	}
+	tpl.ExecuteTemplate(res, "restaurantedit.gohtml", data)
 }
 
 func deleteRestaurant(res http.ResponseWriter, req *http.Request) {
@@ -223,4 +320,45 @@ func insertRestaurant(myRestaurant restaurant) error {
 		return err
 	}
 	return nil
+}
+
+func insertTable(myTable table) error {
+	_, err := db.Exec("INSERT INTO tables (RestaurantName, TableIndex, Seats, createdAt) VALUES (?,?,?,?)",
+		myTable.RestaurantName,
+		myTable.TableIndex,
+		myTable.Seats,
+		time.Now())
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func getRestaurant(restaurantname string) (restaurant, error) {
+	var myRestaurant restaurant
+
+	query := "SELECT RestaurantName FROM restaurants WHERE RestaurantName=? AND deletedAt IS NULL"
+	err := db.QueryRow(query, restaurantname).Scan(&myRestaurant.RestaurantName)
+
+	return myRestaurant, err
+}
+
+func getTables(restaurantname string) (map[int]table, error) {
+	myTables := make(map[int]table)
+	var myTable table
+
+	query := "SELECT TableIndex, Seats FROM tables WHERE RestaurantName=? AND deletedAt IS NULL"
+	results, err := db.Query(query, restaurantname)
+	if err != nil {
+		return myTables, err
+	}
+	defer results.Close()
+	for results.Next() {
+		err := results.Scan(&myTable.TableIndex, &myTable.Seats)
+		if err != nil {
+			return myTables, err
+		}
+		myTables[myTable.TableIndex] = myTable
+	}
+	return myTables, nil
 }
