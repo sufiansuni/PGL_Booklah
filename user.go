@@ -99,12 +99,12 @@ func signup(res http.ResponseWriter, req *http.Request) {
 			}
 
 			myUser = user{
-				Username:  username,
-				Password:  bPassword,
-				Type:      "regular",
+				Username: username,
+				Password: bPassword,
+				Type:     "regular",
 			}
-			
-			err = insertUser(myUser)	// previouslymapUsers[username] = myUser
+
+			err = insertUser(myUser) // previouslymapUsers[username] = myUser
 			if err != nil {
 				fmt.Println(err)
 			} else {
@@ -160,11 +160,13 @@ func login(res http.ResponseWriter, req *http.Request) {
 		} else {
 			fmt.Println("Session Created")
 
-		http.Redirect(res, req, "/", http.StatusSeeOther)
-		return
+			http.Redirect(res, req, "/", http.StatusSeeOther)
+			return
+		}
+
+		tpl.ExecuteTemplate(res, "login.gohtml", nil)
 	}
 
-	tpl.ExecuteTemplate(res, "login.gohtml", nil)
 }
 
 func logout(res http.ResponseWriter, req *http.Request) {
@@ -176,7 +178,7 @@ func logout(res http.ResponseWriter, req *http.Request) {
 	// delete the session
 	_, err := db.Exec("UPDATE sessions SET deletedAt=? WHERE UUID=? AND deletedAt IS NULL", time.Now(), myCookie.Value)
 	if err != nil {
-		panic(err.Error())
+		fmt.Println(err)
 	}
 	// previously: delete(mapSessions, myCookie.Value)
 
