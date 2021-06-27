@@ -65,14 +65,16 @@ func signup(res http.ResponseWriter, req *http.Request) {
 
 		if username != "" {
 			// check if username exist/ taken
-			var query string
+			var checker string
 
-			err := db.QueryRow("SELECT Username FROM users WHERE Username=? AND deletedAt IS NULL", username).Scan(&query)
-			if err == sql.ErrNoRows {
-				//
-			} else if err != nil {
-				http.Error(res, "Internal server error", http.StatusInternalServerError)
-				return
+			query := "SELECT Username FROM users WHERE Username=? AND deletedAt IS NULL"
+
+			err := db.QueryRow(query, username).Scan(&checker)
+			if err != nil {
+				if err != sql.ErrNoRows {
+					http.Error(res, "Internal server error", http.StatusInternalServerError)
+					return
+				}
 			} else {
 				http.Error(res, "Username already taken", http.StatusForbidden)
 				return
@@ -129,11 +131,14 @@ func login(res http.ResponseWriter, req *http.Request) {
 	if req.Method == http.MethodPost {
 		username := req.FormValue("username")
 		password := req.FormValue("password")
+
 		// check if user exist with username
-		var query user
-		err := db.QueryRow("SELECT Username, Password FROM users WHERE Username=? AND deletedAt IS NULL", username).Scan(
-			&query.Username,
-			&query.Password,
+		var checker user
+
+		query := "SELECT Username, Password FROM users WHERE Username=? AND deletedAt IS NULL"
+		err := db.QueryRow(query, username).Scan(
+			&checker.Username,
+			&checker.Password,
 		)
 		if err != nil {
 			fmt.Println(err)
@@ -142,7 +147,7 @@ func login(res http.ResponseWriter, req *http.Request) {
 		}
 
 		// Matching of password entered
-		err = bcrypt.CompareHashAndPassword(query.Password, []byte(password))
+		err = bcrypt.CompareHashAndPassword(checker.Password, []byte(password))
 		if err != nil {
 			http.Error(res, "Username and/or password do not match", http.StatusUnauthorized)
 			return
@@ -173,7 +178,8 @@ func logout(res http.ResponseWriter, req *http.Request) {
 	}
 	myCookie, _ := req.Cookie("myCookie")
 	// delete the session
-	_, err := db.Exec("UPDATE sessions SET deletedAt=? WHERE UUID=? AND deletedAt IS NULL", time.Now(), myCookie.Value)
+	query := "UPDATE sessions SET deletedAt=? WHERE UUID=? AND deletedAt IS NULL"
+	_, err := db.Exec(query, time.Now(), myCookie.Value)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -199,28 +205,30 @@ func checkUser(res http.ResponseWriter, req *http.Request) user {
 			Name:  "myCookie",
 			Value: id.String(),
 		}
-
 	}
 	http.SetCookie(res, myCookie)
 
 	// if the user exists already, get user
-	var query string
+	var checker string
 	var myUser user
 
-	err = db.QueryRow("SELECT Username FROM sessions WHERE UUID=? AND deletedAt IS NULL", myCookie.Value).Scan(&query)
-	if err == sql.ErrNoRows {
-		//
-	} else if err != nil {
-		http.Error(res, "Internal server error", http.StatusInternalServerError)
+	query := "SELECT Username FROM sessions WHERE UUID=? AND deletedAt IS NULL"
+	err = db.QueryRow(query, myCookie.Value).Scan(&checker)
+
+	if err != nil {
+		if err != sql.ErrNoRows {
+			http.Error(res, "Internal server error", http.StatusInternalServerError)
+		}
 	} else {
-		err = db.QueryRow("SELECT Username, Type FROM users WHERE Username=? AND deletedAt IS NULL", query).Scan(
+		query = "SELECT Username, Type FROM users WHERE Username=? AND deletedAt IS NULL"
+		err = db.QueryRow(query, checker).Scan(
 			&myUser.Username,
 			&myUser.Type,
 		)
-		if err == sql.ErrNoRows {
-			//
-		} else if err != nil {
-			http.Error(res, "Internal server error", http.StatusInternalServerError)
+		if err != nil {
+			if err != sql.ErrNoRows {
+				http.Error(res, "Internal server error", http.StatusInternalServerError)
+			}
 		}
 	}
 	return myUser
@@ -232,18 +240,20 @@ func alreadyLoggedIn(req *http.Request) bool {
 		return false
 	}
 
-	var query string
+	var checker string
 
-	err = db.QueryRow("SELECT Username FROM sessions WHERE UUID=? AND deletedAt IS NULL", myCookie.Value).Scan(&query)
-	if err == sql.ErrNoRows {
-		//
-	} else if err != nil {
-		fmt.Print(err)
+	query := "SELECT Username FROM sessions WHERE UUID=? AND deletedAt IS NULL"
+
+	err = db.QueryRow(query, myCookie.Value).Scan(&checker)
+	if err != nil {
+		if err != sql.ErrNoRows {
+			fmt.Print(err)
+		}
 	} else {
-		err = db.QueryRow("SELECT Username FROM users WHERE Username=? AND deletedAt IS NULL", query).Scan(&query)
-		if err == sql.ErrNoRows {
-			//
-		} else if err != nil {
+		query = "SELECT Username FROM users WHERE Username=? AND deletedAt IS NULL"
+
+		err = db.QueryRow(query, checker).Scan(&checker)
+		if err != nil {
 			fmt.Print(err)
 		} else {
 			return true

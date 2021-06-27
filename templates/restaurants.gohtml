@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Restaurants</title>
+    <title>Restaurant Listing</title>
 </head>
 <body>
 <h1>Welcome to the Restaurants page</h1>
@@ -12,7 +12,7 @@
 <ul>
     {{range $key, $val := .RestaurantList}}
     <li>
-        RestaurantName: <a href="/restaurants/{{$key}}">{{$key}}</a><br>
+        RestaurantName: <a href="/restaurants/{{$val.RestaurantName}}">{{$val.RestaurantName}}</a><br>
     </li>
     {{end}}
 </ul>
@@ -22,8 +22,12 @@ There are no restaurants
 
 {{end}}
 
-
+{{if eq .User.Type "admin"}}
 <h2><a href="/restaurants/new">Create New Restaurant</a></h2>
+{{else}}
+{{end}}
+
+<h2><a href="/">Return to Main Page</a></h2>
 
 </body>
 </html>
