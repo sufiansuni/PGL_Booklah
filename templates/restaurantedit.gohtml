@@ -7,17 +7,26 @@
 <body>
 
  <script type="text/JavaScript">
+    var prevAdd = 0;
     var TableIndex = 1;
-    var checker = 1;
     function createNewElement() {
-        TableIndex = 1;
-        checker = 1;
+        var checker = 1;
+        var addhere = 1;
+
         {{range $key, $val := .Tables}}
-        if ({{$key}} == TableIndex) {
-            checker = TableIndex;
+        if ({{$key}} == checker) {
+            addhere = checker;
         }
-        TableIndex++;
+        checker++;
         {{end}}
+
+        addhere++;
+        if (addhere > prevAdd) {
+            TableIndex = addhere;
+            prevAdd = TableIndex;
+        } else if (addhere == prevAdd) {
+            TableIndex++;
+        }
 
         // First create a DIV element.
         var NewTableEntry = document.createElement('div');
@@ -51,7 +60,7 @@
 
 {{if .Tables}}
     {{range $key, $val := .Tables}}
-    <label for ="table{{$val.TableIndex}}seats">Table{{$val.TableIndex}} Seats:</label>
+    <label for ="table{{$val.TableIndex}}seats">table{{$val.TableIndex}} Seats:</label>
     <input type="number" name="table{{$val.TableIndex}}seats" min='1' max='10' value={{$val.Seats}} required>
     <input type="hidden" name="table{{$val.TableIndex}}" value={{$val.TableIndex}}>
     <br>
