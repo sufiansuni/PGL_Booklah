@@ -48,9 +48,6 @@ type booking struct {
 	TableID        int //foreign key
 }
 
-var mapRestaurants = map[string]restaurant{}
-var mapBookings = map[string]booking{}
-
 func indexRestaurant(res http.ResponseWriter, req *http.Request) {
 	myUser := checkUser(res, req)
 
@@ -85,6 +82,11 @@ func indexRestaurant(res http.ResponseWriter, req *http.Request) {
 
 func createNewRestaurant(res http.ResponseWriter, req *http.Request) {
 	myUser := checkUser(res, req)
+
+	if myUser.Type != "admin" {
+		http.Error(res, "Access Unauthorized", http.StatusUnauthorized)
+		return
+	}
 
 	var myRestaurant restaurant
 
@@ -184,6 +186,28 @@ func viewRestaurant(res http.ResponseWriter, req *http.Request) {
 		}
 	}
 
+	var dontshowTable int
+
+	query := "SELECT TableID FROM bookings WHERE RestaurantName=? AND StartTime>? AND EndTime<? AND deletedAt IS NULL"
+	results, err := db.Query(query, params["restaurantname"], time.Now(), time.Now())
+	if err != nil {
+		if err != sql.ErrNoRows {
+			http.Error(res, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+	}
+	defer results.Close()
+	for results.Next() {
+		err := results.Scan(&dontshowTable)
+		if err != nil {
+			if err != sql.ErrNoRows {
+				http.Error(res, "Internal server error", http.StatusInternalServerError)
+				return
+			}
+		}
+		delete(myTables, dontshowTable)
+	}
+
 	data := struct {
 		User       user
 		Restaurant restaurant
@@ -193,11 +217,17 @@ func viewRestaurant(res http.ResponseWriter, req *http.Request) {
 		myRestaurant,
 		myTables,
 	}
+
 	tpl.ExecuteTemplate(res, "restaurantpage.gohtml", data)
 }
 
 func editRestaurant(res http.ResponseWriter, req *http.Request) {
 	myUser := checkUser(res, req)
+
+	if myUser.Type != "admin" {
+		http.Error(res, "Access Unauthorized", http.StatusUnauthorized)
+		return
+	}
 
 	//retrieve initial data
 	params := mux.Vars(req)
@@ -279,7 +309,7 @@ func editRestaurant(res http.ResponseWriter, req *http.Request) {
 						if err != sql.ErrNoRows {
 							http.Error(res, "Internal server error", http.StatusInternalServerError)
 							return
-	
+
 						}
 					}
 
@@ -327,12 +357,23 @@ func editRestaurant(res http.ResponseWriter, req *http.Request) {
 }
 
 func deleteRestaurant(res http.ResponseWriter, req *http.Request) {
-	// if alreadyLoggedIn(req) {
-	// 	http.Redirect(res, req, "/", http.StatusSeeOther)
-	// 	return
-	// }
+	myUser := checkUser(res, req)
+
+	if myUser.Type != "admin" {
+		http.Error(res, "Access Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
 	params := mux.Vars(req)
-	delete(mapRestaurants, params["restaurantname"])
+
+	// previously: delete(mapRestaurants, params["restaurantname"])
+	statement := "UPDATE restaurants SET deletedAt=? WHERE RestaurantName=?"
+	_, err := db.Exec(statement, time.Now(), params["restaurantname"])
+	if err != nil {
+		http.Error(res, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
 	fmt.Println(params["restaurantname"], "deleted")
 
 	http.Redirect(res, req, "/restaurants", http.StatusSeeOther)
@@ -373,14 +414,14 @@ func getTables(restaurantname string) (map[int]table, error) {
 	myTables := make(map[int]table)
 	var myTable table
 
-	query := "SELECT TableIndex, Seats FROM tables WHERE RestaurantName=? AND deletedAt IS NULL"
+	query := "SELECT TableID, TableIndex, Seats FROM tables WHERE RestaurantName=? AND deletedAt IS NULL"
 	results, err := db.Query(query, restaurantname)
 	if err != nil {
 		return myTables, err
 	}
 	defer results.Close()
 	for results.Next() {
-		err := results.Scan(&myTable.TableIndex, &myTable.Seats)
+		err := results.Scan(&myTable.TableID, &myTable.TableIndex, &myTable.Seats)
 		if err != nil {
 			return myTables, err
 		}
