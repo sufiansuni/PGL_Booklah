@@ -263,24 +263,50 @@ func editRestaurant(res http.ResponseWriter, req *http.Request) {
 					newTableIndexConv, err := strconv.Atoi(newTableIndex)
 					if err != nil {
 						http.Error(res, "Internal server error", http.StatusInternalServerError)
+						return
 					}
 
 					newTableSeatsConv, err := strconv.Atoi(newTableSeats)
 					if err != nil {
 						http.Error(res, "Internal server error", http.StatusInternalServerError)
-					}
-
-					statement := "UPDATE tables SET Seats=?, updatedAt=? WHERE RestaurantName=? AND TableIndex=?"
-					_, err = db.Exec(statement,
-						newTableSeatsConv,
-						time.Now(),
-						restaurantname,
-						newTableIndexConv)
-					if err != nil {
-						http.Error(res, "Internal server error", http.StatusInternalServerError)
 						return
 					}
 
+					checker := 0
+					query := "SELECT TableID FROM tables WHERE RestaurantName=? AND TableIndex=? AND deletedAt IS NULL"
+					err = db.QueryRow(query, restaurantname, newTableIndexConv).Scan(&checker)
+					if err != nil {
+						if err != sql.ErrNoRows {
+							http.Error(res, "Internal server error", http.StatusInternalServerError)
+							return
+	
+						}
+					}
+
+					if checker != 0 {
+						statement := "UPDATE tables SET Seats=?, updatedAt=? WHERE RestaurantName=? AND TableIndex=?"
+						_, err = db.Exec(statement,
+							newTableSeatsConv,
+							time.Now(),
+							restaurantname,
+							newTableIndexConv)
+						if err != nil {
+							http.Error(res, "Internal server error", http.StatusInternalServerError)
+							return
+						}
+
+					} else {
+						var myTable table
+						myTable.RestaurantName = restaurantname
+						myTable.TableIndex = newTableIndexConv
+						myTable.Seats = newTableSeatsConv
+
+						err := insertTable(myTable)
+						if err != nil {
+							http.Error(res, "Internal server error", http.StatusInternalServerError)
+							return
+						}
+					}
 				}
 			}
 		}
