@@ -35,39 +35,27 @@ type table struct {
 	RestaurantName string //foreign key
 	TableIndex     int
 	Seats          int
+	Occupied       int
 }
 
 type booking struct {
 	BookingID      int    //primary key
 	Username       string //foreign key
 	RestaurantName string //foreign key
-	Pax            int
 	Date           string
-	StartTime      time.Time
-	Status         string
+	StartTime      string
+	Pax            int
 	TableID        int //foreign key
+	Status         string
 }
 
 func indexRestaurant(res http.ResponseWriter, req *http.Request) {
 	myUser := checkUser(res, req)
 
-	var myRestaurants = map[string]restaurant{}
-	var myRestaurant restaurant
-
-	query := "SELECT RestaurantName FROM restaurants WHERE deletedAt IS NULL"
-
-	results, err := db.Query(query)
+	myRestaurants, err := getRestaurants()
 	if err != nil {
-		panic("error executing sql select")
-	}
-
-	defer results.Close()
-	for results.Next() {
-		err := results.Scan(&myRestaurant.RestaurantName)
-		if err != nil {
-			panic("error getting results from sql select")
-		}
-		myRestaurants[myRestaurant.RestaurantName] = myRestaurant
+		http.Error(res, "Internal server error", http.StatusInternalServerError)
+		return
 	}
 
 	data := struct {
@@ -78,41 +66,6 @@ func indexRestaurant(res http.ResponseWriter, req *http.Request) {
 		myRestaurants,
 	}
 	tpl.ExecuteTemplate(res, "restaurants.gohtml", data)
-}
-
-func createBooking(res http.ResponseWriter, req *http.Request) {
-	myUser := checkUser(res, req)
-	var myBooking booking
-
-	if req.Method == http.MethodPost {
-		restaurantname := req.FormValue("restaurantname")
-		date := req.FormValue("date")
-		pax := req.FormValue("pax")
-		myBooking.RestaurantName = restaurantname
-		myBooking.Date = date
-		ipax, _ := strconv.Atoi(pax)
-		myBooking.Pax = ipax
-		err := insertBooking(myBooking)
-		if err != nil {
-			fmt.Println(err)
-		} else {
-			fmt.Println("New Booking Created:", myBooking.BookingID)
-		}
-		tpl.ExecuteTemplate(res, "booking.gohtml", myUser)
-	}
-
-}
-
-func insertBooking(myBooking booking) error {
-	_, err := db.Exec("INSERT INTO booking (RestaurantName, Pax, Date, createdAt) VALUES (?,?,?,?,)",
-		myBooking.RestaurantName,
-		myBooking.Pax,
-		myBooking.Date,
-		time.Now())
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func createNewRestaurant(res http.ResponseWriter, req *http.Request) {
@@ -151,6 +104,8 @@ func createNewRestaurant(res http.ResponseWriter, req *http.Request) {
 			err = insertRestaurant(myRestaurant) //previously: mapRestaurants[restaurantname] = myRestaurant
 			if err != nil {
 				fmt.Println(err)
+				http.Error(res, "Internal server error", http.StatusInternalServerError)
+				return
 			} else {
 				fmt.Println("New Restaurant Created:", myRestaurant.RestaurantName)
 			}
@@ -172,11 +127,15 @@ func createNewRestaurant(res http.ResponseWriter, req *http.Request) {
 						myTable.Seats, err = strconv.Atoi(tableseatsform)
 						if err != nil {
 							fmt.Println(err)
+							http.Error(res, "Internal server error", http.StatusInternalServerError)
+							return
 						}
 
 						err = insertTable(myTable)
 						if err != nil {
 							fmt.Println(err)
+							http.Error(res, "Internal server error", http.StatusInternalServerError)
+							return
 						} else {
 							fmt.Println("Table Created for", restaurantname)
 						}
@@ -219,28 +178,6 @@ func viewRestaurant(res http.ResponseWriter, req *http.Request) {
 			http.Error(res, "Tables Doesnt Exist", http.StatusForbidden)
 			return
 		}
-	}
-
-	var dontshowTable int
-
-	query := "SELECT TableID FROM bookings WHERE RestaurantName=? AND StartTime>? AND EndTime<? AND deletedAt IS NULL"
-	results, err := db.Query(query, params["restaurantname"], time.Now(), time.Now())
-	if err != nil {
-		if err != sql.ErrNoRows {
-			http.Error(res, "Internal server error", http.StatusInternalServerError)
-			return
-		}
-	}
-	defer results.Close()
-	for results.Next() {
-		err := results.Scan(&dontshowTable)
-		if err != nil {
-			if err != sql.ErrNoRows {
-				http.Error(res, "Internal server error", http.StatusInternalServerError)
-				return
-			}
-		}
-		delete(myTables, dontshowTable)
 	}
 
 	data := struct {
@@ -425,10 +362,11 @@ func insertRestaurant(myRestaurant restaurant) error {
 }
 
 func insertTable(myTable table) error {
-	_, err := db.Exec("INSERT INTO tables (RestaurantName, TableIndex, Seats, createdAt) VALUES (?,?,?,?)",
+	_, err := db.Exec("INSERT INTO tables (RestaurantName, TableIndex, Seats, Occupied, createdAt) VALUES (?,?,?,?,?)",
 		myTable.RestaurantName,
 		myTable.TableIndex,
 		myTable.Seats,
+		0,
 		time.Now())
 	if err != nil {
 		return err
@@ -449,18 +387,45 @@ func getTables(restaurantname string) (map[int]table, error) {
 	myTables := make(map[int]table)
 	var myTable table
 
-	query := "SELECT TableID, TableIndex, Seats FROM tables WHERE RestaurantName=? AND deletedAt IS NULL"
+	query := "SELECT TableID, TableIndex, Seats, Occupied FROM tables WHERE RestaurantName=? AND deletedAt IS NULL"
 	results, err := db.Query(query, restaurantname)
 	if err != nil {
 		return myTables, err
 	}
 	defer results.Close()
 	for results.Next() {
-		err := results.Scan(&myTable.TableID, &myTable.TableIndex, &myTable.Seats)
+		err := results.
+			Scan(&myTable.TableID,
+				&myTable.TableIndex,
+				&myTable.Seats,
+				&myTable.Occupied,
+			)
 		if err != nil {
 			return myTables, err
 		}
-		myTables[myTable.TableIndex] = myTable
+		myTables[myTable.TableID] = myTable
 	}
 	return myTables, nil
+}
+
+func getRestaurants() (map[string]restaurant, error) {
+	var myRestaurants = map[string]restaurant{}
+	var myRestaurant restaurant
+
+	query := "SELECT RestaurantName FROM restaurants WHERE deletedAt IS NULL"
+
+	results, err := db.Query(query)
+	if err != nil {
+		return myRestaurants, err
+	}
+
+	defer results.Close()
+	for results.Next() {
+		err := results.Scan(&myRestaurant.RestaurantName)
+		if err != nil {
+			return myRestaurants, err
+		}
+		myRestaurants[myRestaurant.RestaurantName] = myRestaurant
+	}
+	return myRestaurants, err
 }

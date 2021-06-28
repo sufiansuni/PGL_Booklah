@@ -100,6 +100,7 @@ func createTableTable() {
 		"RestaurantName VARCHAR(255), " +
 		"TableIndex INT, " +
 		"Seats INT, " +
+		"Occupied INT, " +
 		"createdAt DATETIME, " +
 		"updatedAt DATETIME, " +
 		"deletedAt DATETIME" +
@@ -119,12 +120,11 @@ func createBookingTable() {
 		"BookingID INT PRIMARY KEY AUTO_INCREMENT, " +
 		"Username VARCHAR(255), " +
 		"RestaurantName VARCHAR(255), " +
-		"Pax INT, " +
 		"Date VARCHAR(255)," +
-		"StartTime DATETIME, " +
-		"EndTime DATETIME, " +
-		"Status VARCHAR(255), " +
+		"StartTime VARCHAR(255), " +
+		"Pax INT, " +
 		"TableID INT, " +
+		"Status VARCHAR(255), " +
 		"createdAt DATETIME, " +
 		"updatedAt DATETIME, " +
 		"deletedAt DATETIME" +
