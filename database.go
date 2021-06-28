@@ -120,6 +120,7 @@ func createBookingTable() {
 		"Username VARCHAR(255), " +
 		"RestaurantName VARCHAR(255), " +
 		"Pax INT, " +
+		"Date VARCHAR(255)," +
 		"StartTime DATETIME, " +
 		"EndTime DATETIME, " +
 		"Status VARCHAR(255), " +
