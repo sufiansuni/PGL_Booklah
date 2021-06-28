@@ -42,8 +42,8 @@ type booking struct {
 	Username       string //foreign key
 	RestaurantName string //foreign key
 	Pax            int
+	Date           string
 	StartTime      time.Time
-	EndTime        time.Time
 	Status         string
 	TableID        int //foreign key
 }
@@ -81,6 +81,41 @@ func indexRestaurant(res http.ResponseWriter, req *http.Request) {
 		myRestaurants,
 	}
 	tpl.ExecuteTemplate(res, "restaurants.gohtml", data)
+}
+
+func createBooking(res http.ResponseWriter, req *http.Request) {
+	myUser := checkUser(res, req)
+	var myBooking booking
+
+	if req.Method == http.MethodPost {
+		restaurantname := req.FormValue("restaurantname")
+		date := req.FormValue("date")
+		pax := req.FormValue("pax")
+		myBooking.RestaurantName = restaurantname
+		myBooking.Date = date
+		ipax, _ := strconv.Atoi(pax)
+		myBooking.Pax = ipax
+		err := insertBooking(myBooking)
+		if err != nil {
+			fmt.Println(err)
+		} else {
+			fmt.Println("New Booking Created:", myBooking.BookingID)
+		}
+		tpl.ExecuteTemplate(res, "booking.gohtml", myUser)
+	}
+
+}
+
+func insertBooking(myBooking booking) error {
+	_, err := db.Exec("INSERT INTO booking (RestaurantName, Pax, Date, createdAt) VALUES (?,?,?,?,)",
+		myBooking.RestaurantName,
+		myBooking.Pax,
+		myBooking.Date,
+		time.Now())
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func createNewRestaurant(res http.ResponseWriter, req *http.Request) {
@@ -279,7 +314,7 @@ func editRestaurant(res http.ResponseWriter, req *http.Request) {
 						if err != sql.ErrNoRows {
 							http.Error(res, "Internal server error", http.StatusInternalServerError)
 							return
-	
+
 						}
 					}
 
