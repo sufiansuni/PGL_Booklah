@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Customer's Booking Criteria Page</title>
+</head>
+<body>
+
+<h1>Welcome to Restaurant Booking Page</h1>
+<h3>Please make the selections to narrow Restaurant selection</h3>
+<form method="post">
+    <label for ="groupsizeselection">Group Size:</label>
+    <select name="groupsizeselection" id="groupsizeselection">
+    <optgroup label="Table for 2">
+      <option value="1">1</option>
+      <option value="2">2</option>
+    </optgroup>
+    <optgroup label="Table for 4">
+      <option value="2">2</option>
+      <option value="3">3</option>
+      <option value="4">4</option>
+    </optgroup>
+    <optgroup label="Table for 6">
+      <option value="4">4</option>
+      <option value="5">5</option>
+      <option value="6">6</option>
+    </optgroup>
+    <optgroup label="Table for 8">
+      <option value="6">6</option>
+      <option value="7">7</option>
+      <option value="8">8</option>
+    </optgroup>
+  </select>
+  <br><br>
+
+  <label for="dietarypref">Dietary Preference:</label>
+  <select id="dietarypref" name="dietarypref" size="4" multiple>
+    <option value="halal">Halal</option>
+    <option value="vegetarian">Vegetarian</option>
+    <option value="vegan">Vegan</option>
+    <option value="nobeef">No Beef</option>
+  </select><br><br>
+
+  <p>Hold down the Ctrl (windows) / Command (Mac) button to select multiple options.</p>
+
+  <label for ="vacination">Vacinated:</label>
+    <select name="vacination" id="vacination">
+    <optgroup label="Vacinated">
+      <option value="yes">Yes</option>
+      <option value="no">No</option>
+    </optgroup>
+    </select><br><br>
+    
+  <input type="submit" value="Submit">
+</form>
+ 
+</body>
+</html>
