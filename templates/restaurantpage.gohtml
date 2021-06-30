@@ -12,12 +12,18 @@
 Restaurant Name: {{.Restaurant.RestaurantName}}<br>
 
 {{if .Tables}}
-<h2>List of Tables:</h2>
+<h2>Current Available Tables:</h2>
 <ul>
     {{range $key, $val := .Tables}}
     <li>
-        TableIndex: {{$val.TableIndex}}
+        TableNumber: {{$val.TableIndex}},
         Seats: {{$val.Seats}}
+        Status:
+        {{if eq $val.Occupied 0}}
+        Available
+        {{else}}
+        Occupied
+        {{end}}
     </li>
     {{end}}
 </ul>
@@ -30,6 +36,8 @@ This restaurant has no tables
 {{else}}
 No restaurant details
 {{end}}
+
+<h2><a href="/restaurants/{{.Restaurant.RestaurantName}}/booking">Make a Booking</a></h2>
 
 {{if eq .User.Type "admin"}}
 <h2><a href="/restaurants/{{.Restaurant.RestaurantName}}/edit">Edit this Restaurant</a></h2>
