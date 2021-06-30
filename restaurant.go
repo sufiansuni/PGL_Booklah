@@ -54,34 +54,83 @@ var mapBookings = map[string]booking{}
 func indexRestaurant(res http.ResponseWriter, req *http.Request) {
 	myUser := checkUser(res, req)
 
-	var myRestaurants = map[string]restaurant{}
-	var myRestaurant restaurant
-
-	query := "SELECT RestaurantName FROM restaurants WHERE deletedAt IS NULL"
-
-	results, err := db.Query(query)
+	myRestaurants, err := getRestaurants()
 	if err != nil {
-		panic("error executing sql select")
+		http.Error(res, "Internal server error", http.StatusInternalServerError)
+		return
 	}
 
-	defer results.Close()
-	for results.Next() {
-		err := results.Scan(&myRestaurant.RestaurantName)
-		if err != nil {
-			panic("error getting results from sql select")
+	// separating GET and POST
+
+	if req.Method == http.MethodGet {
+		data := struct {
+			User           user
+			RestaurantList map[string]restaurant
+		}{
+			myUser,
+			myRestaurants,
 		}
-		myRestaurants[myRestaurant.RestaurantName] = myRestaurant
+		tpl.ExecuteTemplate(res, "restaurants.gohtml", data)
+		return
 	}
 
-	data := struct {
-		User           user
-		RestaurantList map[string]restaurant
-	}{
-		myUser,
-		myRestaurants,
+	if req.Method == http.MethodPost {
+		var myfilteredRestaurants = map[string]restaurant{}
+		var myTable table
+
+		// get form values
+		Quantity := req.FormValue("Quantity")
+
+		if Quantity == "" {
+			//look at table database
+			query := "SELECT RestaurantName FROM tables WHERE Seats >=? AND deletedAt IS NULL"
+
+			// pass in Quantity variable
+			results, err := db.Query(query, Quantity)
+			if err != nil {
+				http.Error(res, "Internal server error", http.StatusInternalServerError)
+				return
+			}
+			defer results.Close()
+			for results.Next() {
+				//store info from table database into my own variable
+				err := results.Scan(&myTable.RestaurantName)
+				if err != nil {
+					http.Error(res, "Internal server error", http.StatusInternalServerError)
+					return
+				}
+				//for all the restaurant names I received,
+				//I will pick out from the entire list that I have, retrieved earlier in code
+				myfilteredRestaurants[myTable.RestaurantName] = myRestaurants[myTable.RestaurantName]
+			}
+
+			data := struct {
+				User           user
+				RestaurantList map[string]restaurant
+			}{
+				myUser,
+				myfilteredRestaurants,
+			}
+			tpl.ExecuteTemplate(res, "restaurants.gohtml", data)
+
+		} else {
+			http.Redirect(res, req, "/restaurants", http.StatusSeeOther)
+		}
+		return
 	}
-	tpl.ExecuteTemplate(res, "restaurants.gohtml", data)
 }
+
+//retrieve your search boxes/FormValues
+
+//use those form values to query the database
+
+//find tables from tables database that has >= Pax
+// you want restaurantname from tables database that Seats >= Pax
+
+// make a new filtered restaurant map, myRestaurantsFiltered
+// for k, v := range myRestaurants{
+//myRestaurantsFiltered[restaurantname] = myrestaurants[restaurantname]
+//}
 
 func createNewRestaurant(res http.ResponseWriter, req *http.Request) {
 	myUser := checkUser(res, req)
@@ -279,7 +328,7 @@ func editRestaurant(res http.ResponseWriter, req *http.Request) {
 						if err != sql.ErrNoRows {
 							http.Error(res, "Internal server error", http.StatusInternalServerError)
 							return
-	
+
 						}
 					}
 
@@ -387,4 +436,26 @@ func getTables(restaurantname string) (map[int]table, error) {
 		myTables[myTable.TableIndex] = myTable
 	}
 	return myTables, nil
+}
+
+func getRestaurants() (map[string]restaurant, error) {
+	var myRestaurants = map[string]restaurant{}
+	var myRestaurant restaurant
+
+	query := "SELECT RestaurantName FROM restaurants WHERE deletedAt IS NULL"
+
+	results, err := db.Query(query)
+	if err != nil {
+		return myRestaurants, err
+	}
+
+	defer results.Close()
+	for results.Next() {
+		err := results.Scan(&myRestaurant.RestaurantName)
+		if err != nil {
+			return myRestaurants, err
+		}
+		myRestaurants[myRestaurant.RestaurantName] = myRestaurant
+	}
+	return myRestaurants, err
 }
