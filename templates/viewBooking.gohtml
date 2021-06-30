@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Booking</title>
+</head>
+<body>
+<h1>Welcome to your Booking page</h1>
+{{if .User}}
+<h2>Here are your Booking details:</h2>
+
+    {{range $key, $val := .Booking}}
+    
+        <h3>BookingID:{{$val.BookingID}}</h3>
+        <h3> RestaurantName:{{$val.RestaurantName}}</h3>
+        <h3> Date:{{$val.Date}}</h3>
+        <h3> Time:{{$val.StartTime}}</h3>
+         <h3>Pax:{{$val.Pax}}</h3>
+         <h3>TableID:{{$val.TableID}}</h3><br><br>
+
+
+    {{end}}
+
+{{else}}
+There are no booking
+{{end}}
+<h2><a href="/">Return to Main Page</a></h2>
+
+</body>
+</html>

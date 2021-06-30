@@ -89,7 +89,7 @@ func createBooking(res http.ResponseWriter, req *http.Request) {
 			}
 
 			//delete tables that are < user intended pax
-			for k,v := range myTables {
+			for k, v := range myTables {
 				if v.Seats < ipax {
 					delete(myTables, k)
 				}
@@ -115,9 +115,10 @@ func createBooking(res http.ResponseWriter, req *http.Request) {
 			myBooking.TableID = itablechoice
 
 			var checker int
-			query := "SELECT BookingID FROM bookings WHERE RestaurantName=? AND Date=? AND StartTime=? AND TableID=? AND Status='Reserved' AND deletedAt IS NULL"
+			query := "SELECT BookingID FROM bookings WHERE Username=? AND RestaurantName=? AND Date=? AND StartTime=? AND TableID=? AND Status='Reserved' AND deletedAt IS NULL"
 
 			err := db.QueryRow(query,
+				myBooking.Username,
 				myBooking.RestaurantName,
 				myBooking.Date,
 				myBooking.StartTime,
@@ -152,6 +153,22 @@ func createBooking(res http.ResponseWriter, req *http.Request) {
 	}
 }
 
+/*func updateBooking(myBooking booking) error {
+	_, err := db.Exec("UPDATE INTO bookings (Username, RestaurantName, Date, StartTime, Pax, TableID, Status, createdAt) VALUES (?,?,?,?,?,?,?,?)",
+		myBooking.Username,
+		myBooking.RestaurantName,
+		myBooking.Date,
+		myBooking.StartTime,
+		myBooking.Pax,
+		myBooking.TableID,
+		"Reserved",
+		time.Now())
+	if err != nil {
+		return err
+	}
+	return nil
+}*/
+
 func insertBooking(myBooking booking) error {
 	_, err := db.Exec("INSERT INTO bookings (Username, RestaurantName, Date, StartTime, Pax, TableID, Status, createdAt) VALUES (?,?,?,?,?,?,?,?)",
 		myBooking.Username,
@@ -166,4 +183,123 @@ func insertBooking(myBooking booking) error {
 		return err
 	}
 	return nil
+}
+
+/*func getBooking(restaurantname string) (map[string]booking, error) {
+	myBookings := make(map[string]booking)
+	var myBooking booking
+
+	query := "SELECT BookingID, Username, Date, StartTime, Pax, TableID FROM bookings WHERE RestaurantName=? AND deletedAt IS NULL"
+	results, err := db.Query(query, restaurantname)
+	if err != nil {
+		return myBookings, err
+	}
+	defer results.Close()
+	for results.Next() {
+		err := results.
+			Scan(&myBooking.BookingID,
+				&myBooking.Username,
+				&myBooking.Date,
+				&myBooking.StartTime,
+				&myBooking.Pax,
+				&myBooking.TableID,
+			)
+		if err != nil {
+			return myBookings, err
+		}
+		myBookings[myBooking.Date] = myBooking
+	}
+	return myBookings, nil
+}*/
+
+/*func viewBooking(res http.ResponseWriter, req *http.Request) {
+	myUser := checkUser(res, req)
+
+	params := mux.Vars(req)
+
+	var myRestaurant restaurant
+	var myBookings = map[string]booking{}
+
+	myRestaurant, err := getRestaurant(params["restaurantname"])
+	if err != nil {
+		if err != sql.ErrNoRows {
+			http.Error(res, "Internal server error", http.StatusInternalServerError)
+			return
+		} else {
+			http.Error(res, "Restaurant Doesnt Exist", http.StatusForbidden)
+			return
+		}
+	}
+
+	myBookings, err = getBooking(params["restaurantname"])
+	if err != nil {
+		if err != sql.ErrNoRows {
+			http.Error(res, "Internal server error", http.StatusInternalServerError)
+			return
+		} else {
+			http.Error(res, "Booking Doesnt Exist", http.StatusForbidden)
+			return
+		}
+	}
+
+	data := struct {
+		User       user
+		Restaurant restaurant
+		Bookings   map[string]booking
+	}{
+		myUser,
+		myRestaurant,
+		myBookings,
+	}
+
+	tpl.ExecuteTemplate(res, "viewBooking.gohtml", data)
+}*/
+
+func viewBooking(res http.ResponseWriter, req *http.Request) {
+	myUser := checkUser(res, req)
+
+	myBooking, err := getBooking(myUser.Username)
+	if err != nil {
+		http.Error(res, "Internal server error", http.StatusInternalServerError)
+		fmt.Println(err)
+		return
+	}
+
+	data := struct {
+		User    user
+		Booking map[int]booking
+	}{
+		myUser,
+		myBooking,
+	}
+	tpl.ExecuteTemplate(res, "viewBooking.gohtml", data)
+}
+
+func getBooking(Username string) (map[int]booking, error) {
+	var myBookings = map[int]booking{}
+	var myBooking booking
+
+	query := "SELECT BookingID, Username, RestaurantName, Date, StartTime, Pax, TableID FROM bookings WHERE Username=? AND deletedAt IS NULL"
+
+	results, err := db.Query(query, Username)
+	if err != nil {
+		return myBookings, err
+	}
+
+	defer results.Close()
+	for results.Next() {
+		err := results.Scan(
+			&myBooking.BookingID,
+			&myBooking.Username,
+			&myBooking.RestaurantName,
+			&myBooking.Date,
+			&myBooking.StartTime,
+			&myBooking.Pax,
+			&myBooking.TableID)
+		if err != nil {
+			return myBookings, err
+		}
+		myBookings[myBooking.BookingID] = myBooking
+	}
+	return myBookings, err
 }
