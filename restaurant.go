@@ -56,17 +56,81 @@ func indexRestaurant(res http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		http.Error(res, "Internal server error", http.StatusInternalServerError)
 		return
+
 	}
 
-	data := struct {
-		User           user
-		RestaurantList map[string]restaurant
-	}{
-		myUser,
-		myRestaurants,
+	// separating GET and POST
+
+	if req.Method == http.MethodGet {
+		data := struct {
+			User           user
+			RestaurantList map[string]restaurant
+		}{
+			myUser,
+			myRestaurants,
+		}
+		tpl.ExecuteTemplate(res, "restaurants.gohtml", data)
+		return
+
 	}
-	tpl.ExecuteTemplate(res, "restaurants.gohtml", data)
+
+	if req.Method == http.MethodPost {
+		var myfilteredRestaurants = map[string]restaurant{}
+		var myTable table
+
+		// get form values
+		Quantity := req.FormValue("Quantity")
+
+		if Quantity == "" {
+			//look at table database
+			query := "SELECT RestaurantName FROM tables WHERE Seats >=? AND deletedAt IS NULL"
+
+			// pass in Quantity variable
+			results, err := db.Query(query, Quantity)
+			if err != nil {
+				http.Error(res, "Internal server error", http.StatusInternalServerError)
+				return
+			}
+			defer results.Close()
+			for results.Next() {
+				//store info from table database into my own variable
+				err := results.Scan(&myTable.RestaurantName)
+				if err != nil {
+					http.Error(res, "Internal server error", http.StatusInternalServerError)
+					return
+				}
+				//for all the restaurant names I received,
+				//I will pick out from the entire list that I have, retrieved earlier in code
+				myfilteredRestaurants[myTable.RestaurantName] = myRestaurants[myTable.RestaurantName]
+			}
+
+			data := struct {
+				User           user
+				RestaurantList map[string]restaurant
+			}{
+				myUser,
+				myfilteredRestaurants,
+			}
+			tpl.ExecuteTemplate(res, "restaurants.gohtml", data)
+
+		} else {
+			http.Redirect(res, req, "/restaurants", http.StatusSeeOther)
+		}
+		return
+	}
 }
+
+//retrieve your search boxes/FormValues
+
+//use those form values to query the database
+
+//find tables from tables database that has >= Pax
+// you want restaurantname from tables database that Seats >= Pax
+
+// make a new filtered restaurant map, myRestaurantsFiltered
+// for k, v := range myRestaurants{
+//myRestaurantsFiltered[restaurantname] = myrestaurants[restaurantname]
+//}
 
 func createNewRestaurant(res http.ResponseWriter, req *http.Request) {
 	myUser := checkUser(res, req)

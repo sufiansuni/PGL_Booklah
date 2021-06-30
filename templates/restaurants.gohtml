@@ -17,6 +17,23 @@
     {{end}}
 </ul>
 
+<h1>Please enter your number of pax</h1>
+<form method="post">
+    <label for ="Quantity">Quantity:</label>
+    <input type="text" name="Quantity" placeholder="Number of pax"><br>
+    <input type="submit">
+</form>
+
+{{if .RestaurantList}}
+<h2>Restaurant Details:</h2>
+<ul>
+    {{range $key, $val := .RestaurantList}}
+    <li>
+        RestaurantName: <a href="/restaurants/{{$val.RestaurantName}}">{{$val.RestaurantName}}</a><br>
+    </li>
+    {{end}}
+</ul>
+
 {{else}}
 There are no restaurants
 
@@ -31,3 +48,4 @@ There are no restaurants
 
 </body>
 </html>
+{{end}}
