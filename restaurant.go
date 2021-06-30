@@ -35,56 +35,114 @@ type table struct {
 	RestaurantName string //foreign key
 	TableIndex     int
 	Seats          int
+	Occupied       int
 }
 
 type booking struct {
 	BookingID      int    //primary key
 	Username       string //foreign key
 	RestaurantName string //foreign key
+	Date           string
+	StartTime      string
 	Pax            int
-	StartTime      time.Time
-	EndTime        time.Time
-	Status         string
 	TableID        int //foreign key
+	Status         string
 }
-
-var mapRestaurants = map[string]restaurant{}
-var mapBookings = map[string]booking{}
 
 func indexRestaurant(res http.ResponseWriter, req *http.Request) {
 	myUser := checkUser(res, req)
 
-	var myRestaurants = map[string]restaurant{}
-	var myRestaurant restaurant
-
-	query := "SELECT RestaurantName FROM restaurants WHERE deletedAt IS NULL"
-
-	results, err := db.Query(query)
+	myRestaurants, err := getRestaurants()
 	if err != nil {
-		panic("error executing sql select")
+		http.Error(res, "Internal server error", http.StatusInternalServerError)
+		return
+
 	}
 
-	defer results.Close()
-	for results.Next() {
-		err := results.Scan(&myRestaurant.RestaurantName)
-		if err != nil {
-			panic("error getting results from sql select")
+	// separating GET and POST
+
+	if req.Method == http.MethodGet {
+		data := struct {
+			User           user
+			RestaurantList map[string]restaurant
+			Quantity       int
+		}{
+			myUser,
+			myRestaurants,
+			0,
 		}
-		myRestaurants[myRestaurant.RestaurantName] = myRestaurant
+		tpl.ExecuteTemplate(res, "restaurants.gohtml", data)
+		return
 	}
 
-	data := struct {
-		User           user
-		RestaurantList map[string]restaurant
-	}{
-		myUser,
-		myRestaurants,
+	if req.Method == http.MethodPost {
+		var myfilteredRestaurants = map[string]restaurant{}
+		var myTable table
+
+		// get form values
+		Quantity := req.FormValue("Quantity")
+
+		if Quantity != "" {
+			//look at table database
+			query := "SELECT RestaurantName FROM tables WHERE Seats >=? AND deletedAt IS NULL"
+
+			// pass in Quantity variable
+			iQuantity, _ := strconv.Atoi(Quantity)
+			results, err := db.Query(query, iQuantity)
+			if err != nil {
+				http.Error(res, "Internal server error", http.StatusInternalServerError)
+				return
+			}
+			defer results.Close()
+			for results.Next() {
+				//store info from table database into my own variable
+				err := results.Scan(&myTable.RestaurantName)
+				if err != nil {
+					http.Error(res, "Internal server error", http.StatusInternalServerError)
+					return
+				}
+				//for all the restaurant names I received,
+				//I will pick out from the entire list that I have, retrieved earlier in code
+				myfilteredRestaurants[myTable.RestaurantName] = myRestaurants[myTable.RestaurantName]
+			}
+
+			data := struct {
+				User           user
+				RestaurantList map[string]restaurant
+				Quantity       int
+			}{
+				myUser,
+				myfilteredRestaurants,
+				iQuantity,
+			}
+			tpl.ExecuteTemplate(res, "restaurants.gohtml", data)
+
+		} else {
+			http.Redirect(res, req, "/restaurants", http.StatusSeeOther)
+		}
+		return
 	}
-	tpl.ExecuteTemplate(res, "restaurants.gohtml", data)
 }
+
+//retrieve your search boxes/FormValues
+
+//use those form values to query the database
+
+//find tables from tables database that has >= Pax
+// you want restaurantname from tables database that Seats >= Pax
+
+// make a new filtered restaurant map, myRestaurantsFiltered
+// for k, v := range myRestaurants{
+//myRestaurantsFiltered[restaurantname] = myrestaurants[restaurantname]
+//}
 
 func createNewRestaurant(res http.ResponseWriter, req *http.Request) {
 	myUser := checkUser(res, req)
+
+	if myUser.Type != "admin" {
+		http.Error(res, "Access Unauthorized", http.StatusUnauthorized)
+		return
+	}
 
 	var myRestaurant restaurant
 
@@ -114,6 +172,8 @@ func createNewRestaurant(res http.ResponseWriter, req *http.Request) {
 			err = insertRestaurant(myRestaurant) //previously: mapRestaurants[restaurantname] = myRestaurant
 			if err != nil {
 				fmt.Println(err)
+				http.Error(res, "Internal server error", http.StatusInternalServerError)
+				return
 			} else {
 				fmt.Println("New Restaurant Created:", myRestaurant.RestaurantName)
 			}
@@ -135,11 +195,15 @@ func createNewRestaurant(res http.ResponseWriter, req *http.Request) {
 						myTable.Seats, err = strconv.Atoi(tableseatsform)
 						if err != nil {
 							fmt.Println(err)
+							http.Error(res, "Internal server error", http.StatusInternalServerError)
+							return
 						}
 
 						err = insertTable(myTable)
 						if err != nil {
 							fmt.Println(err)
+							http.Error(res, "Internal server error", http.StatusInternalServerError)
+							return
 						} else {
 							fmt.Println("Table Created for", restaurantname)
 						}
@@ -193,11 +257,17 @@ func viewRestaurant(res http.ResponseWriter, req *http.Request) {
 		myRestaurant,
 		myTables,
 	}
+
 	tpl.ExecuteTemplate(res, "restaurantpage.gohtml", data)
 }
 
 func editRestaurant(res http.ResponseWriter, req *http.Request) {
 	myUser := checkUser(res, req)
+
+	if myUser.Type != "admin" {
+		http.Error(res, "Access Unauthorized", http.StatusUnauthorized)
+		return
+	}
 
 	//retrieve initial data
 	params := mux.Vars(req)
@@ -279,7 +349,7 @@ func editRestaurant(res http.ResponseWriter, req *http.Request) {
 						if err != sql.ErrNoRows {
 							http.Error(res, "Internal server error", http.StatusInternalServerError)
 							return
-	
+
 						}
 					}
 
@@ -327,12 +397,23 @@ func editRestaurant(res http.ResponseWriter, req *http.Request) {
 }
 
 func deleteRestaurant(res http.ResponseWriter, req *http.Request) {
-	// if alreadyLoggedIn(req) {
-	// 	http.Redirect(res, req, "/", http.StatusSeeOther)
-	// 	return
-	// }
+	myUser := checkUser(res, req)
+
+	if myUser.Type != "admin" {
+		http.Error(res, "Access Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
 	params := mux.Vars(req)
-	delete(mapRestaurants, params["restaurantname"])
+
+	// previously: delete(mapRestaurants, params["restaurantname"])
+	statement := "UPDATE restaurants SET deletedAt=? WHERE RestaurantName=?"
+	_, err := db.Exec(statement, time.Now(), params["restaurantname"])
+	if err != nil {
+		http.Error(res, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
 	fmt.Println(params["restaurantname"], "deleted")
 
 	http.Redirect(res, req, "/restaurants", http.StatusSeeOther)
@@ -349,10 +430,11 @@ func insertRestaurant(myRestaurant restaurant) error {
 }
 
 func insertTable(myTable table) error {
-	_, err := db.Exec("INSERT INTO tables (RestaurantName, TableIndex, Seats, createdAt) VALUES (?,?,?,?)",
+	_, err := db.Exec("INSERT INTO tables (RestaurantName, TableIndex, Seats, Occupied, createdAt) VALUES (?,?,?,?,?)",
 		myTable.RestaurantName,
 		myTable.TableIndex,
 		myTable.Seats,
+		0,
 		time.Now())
 	if err != nil {
 		return err
@@ -373,18 +455,45 @@ func getTables(restaurantname string) (map[int]table, error) {
 	myTables := make(map[int]table)
 	var myTable table
 
-	query := "SELECT TableIndex, Seats FROM tables WHERE RestaurantName=? AND deletedAt IS NULL"
+	query := "SELECT TableID, TableIndex, Seats, Occupied FROM tables WHERE RestaurantName=? AND deletedAt IS NULL"
 	results, err := db.Query(query, restaurantname)
 	if err != nil {
 		return myTables, err
 	}
 	defer results.Close()
 	for results.Next() {
-		err := results.Scan(&myTable.TableIndex, &myTable.Seats)
+		err := results.
+			Scan(&myTable.TableID,
+				&myTable.TableIndex,
+				&myTable.Seats,
+				&myTable.Occupied,
+			)
 		if err != nil {
 			return myTables, err
 		}
-		myTables[myTable.TableIndex] = myTable
+		myTables[myTable.TableID] = myTable
 	}
 	return myTables, nil
+}
+
+func getRestaurants() (map[string]restaurant, error) {
+	var myRestaurants = map[string]restaurant{}
+	var myRestaurant restaurant
+
+	query := "SELECT RestaurantName FROM restaurants WHERE deletedAt IS NULL"
+
+	results, err := db.Query(query)
+	if err != nil {
+		return myRestaurants, err
+	}
+
+	defer results.Close()
+	for results.Next() {
+		err := results.Scan(&myRestaurant.RestaurantName)
+		if err != nil {
+			return myRestaurants, err
+		}
+		myRestaurants[myRestaurant.RestaurantName] = myRestaurant
+	}
+	return myRestaurants, err
 }
