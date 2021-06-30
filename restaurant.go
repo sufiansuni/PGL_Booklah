@@ -65,13 +65,14 @@ func indexRestaurant(res http.ResponseWriter, req *http.Request) {
 		data := struct {
 			User           user
 			RestaurantList map[string]restaurant
+			Quantity       int
 		}{
 			myUser,
 			myRestaurants,
+			0,
 		}
 		tpl.ExecuteTemplate(res, "restaurants.gohtml", data)
 		return
-
 	}
 
 	if req.Method == http.MethodPost {
@@ -81,12 +82,13 @@ func indexRestaurant(res http.ResponseWriter, req *http.Request) {
 		// get form values
 		Quantity := req.FormValue("Quantity")
 
-		if Quantity == "" {
+		if Quantity != "" {
 			//look at table database
 			query := "SELECT RestaurantName FROM tables WHERE Seats >=? AND deletedAt IS NULL"
 
 			// pass in Quantity variable
-			results, err := db.Query(query, Quantity)
+			iQuantity, _ := strconv.Atoi(Quantity)
+			results, err := db.Query(query, iQuantity)
 			if err != nil {
 				http.Error(res, "Internal server error", http.StatusInternalServerError)
 				return
@@ -107,9 +109,11 @@ func indexRestaurant(res http.ResponseWriter, req *http.Request) {
 			data := struct {
 				User           user
 				RestaurantList map[string]restaurant
+				Quantity       int
 			}{
 				myUser,
 				myfilteredRestaurants,
+				iQuantity,
 			}
 			tpl.ExecuteTemplate(res, "restaurants.gohtml", data)
 

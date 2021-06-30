@@ -9,23 +9,12 @@
 
 {{if .RestaurantList}}
 <h2>List of Restaurants:</h2>
-<ul>
-    {{range $key, $val := .RestaurantList}}
-    <li>
-        RestaurantName: <a href="/restaurants/{{$val.RestaurantName}}">{{$val.RestaurantName}}</a><br>
-    </li>
-    {{end}}
-</ul>
 
-<h1>Please enter your number of pax</h1>
-<form method="post">
-    <label for ="Quantity">Quantity:</label>
-    <input type="text" name="Quantity" placeholder="Number of pax"><br>
-    <input type="submit">
-</form>
+{{if ne .Quantity 0}}
+<h2>Filter: {{.Quantity}} Pax</h2>
+{{else}}
+{{end}}
 
-{{if .RestaurantList}}
-<h2>Restaurant Details:</h2>
 <ul>
     {{range $key, $val := .RestaurantList}}
     <li>
@@ -39,6 +28,13 @@ There are no restaurants
 
 {{end}}
 
+<h1>Please enter your number of pax</h1>
+<form method="post">
+    <label for ="Quantity">Quantity:</label>
+    <input type="number" name="Quantity" value={{.Quantity}} min=1 max=10 required><br>
+    <input type="submit">
+</form>
+
 {{if eq .User.Type "admin"}}
 <h2><a href="/restaurants/new">Create New Restaurant</a></h2>
 {{else}}
@@ -48,4 +44,3 @@ There are no restaurants
 
 </body>
 </html>
-{{end}}
