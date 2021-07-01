@@ -57,6 +57,41 @@
     <label for ="currentpax">Current Pax:</label>
     <input type="number" name="currentpax" min = 0 max = 999 value={{.Restaurant.CurrentPax}} required><br>
 
+    <label for="diet">Dietary Info: </label>
+    <select name="diet" required>
+        {{if eq .Restaurant.DietaryP "Vegetarian"}}
+        <option value="Vegetarian" selected>Vegetarian</option>
+        {{else}}
+        <option value="Vegetarian">Vegetarian</option>
+        {{end}}
+
+        {{if eq .Restaurant.DietaryP "Halal"}}
+        <option value="Halal" selected>Halal</option>
+        {{else}}
+        <option value="Halal">Halal</option>
+        {{end}}
+
+        {{if eq .Restaurant.DietaryP "No Pork No Lard"}}
+        <option value="No Pork No Lard" selected>No Pork No Lard</option>
+        {{else}}
+        <option value="No Pork No Lard">No Pork No Lard</option>
+        {{end}}
+
+        {{if eq .Restaurant.DietaryP "No Beef"}}
+        <option value="No Beef" selected>No Beef</option>
+        {{else}}
+        <option value="No Beef">No Beef</option>
+        {{end}}
+
+        {{if eq .Restaurant.DietaryP "None"}}
+        <option value="None" selected>None</option>
+        {{else}}
+        <option value="None">None</option>
+        {{end}}
+
+    </select>
+    <br>
+
     <div id="dynamictable">
         <input type="button" value="Add Table" onclick="createNewElement();"/>
     </div>

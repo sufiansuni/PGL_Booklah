@@ -15,12 +15,17 @@
 {{else}}
 {{end}}
 
+{{if ne .DietaryP ""}}
+<h2>Filter: Dietary Preferance: {{.DietaryP}}</h2>
+{{else}}
+{{end}}
+
 <ul>
     {{range $key, $val := .RestaurantList}}
     <li>
-        RestaurantName: <a href="/restaurants/{{$val.RestaurantName}}">{{$val.RestaurantName}}</a>
-        Current Pax: {{$val.CurrentPax}}
-        <br>
+        RestaurantName: <a href="/restaurants/{{$val.RestaurantName}}">{{$val.RestaurantName}}</a>, 
+        Current Pax: {{$val.CurrentPax}}, 
+        Dietary Info: {{$val.DietaryP}}
     </li>
     {{end}}
 </ul>
@@ -30,11 +35,22 @@ There are no restaurants
 
 {{end}}
 
-<h1>Please enter your number of pax</h1>
+<h1>Search Parameters:</h1>
 <form method="post">
-    <label for ="Quantity">Quantity:</label>
-    <input type="number" name="Quantity" value={{.Quantity}} min=1 max=10 required><br>
-    <input type="submit">
+    <label for ="Quantity">Pax:</label>
+    <input type="number" name="Quantity" value={{.Quantity}} min=1 max=10><br>
+    <label for="diet">Dietary Info: </label>
+    <select name="diet">
+        <option value=""></option>
+        <option value="Vegetarian">Vegetarian</option>
+        <option value="Halal">Halal</option>
+        <option value="No Pork No Lard">No Pork No Lard</option>
+        <option value="No Beef">No Beef</option>
+        <option value="None">None</option>
+    </select>
+    <br>
+
+    <input type="submit" value="Start Search">
 </form>
 
 {{if eq .User.Type "admin"}}

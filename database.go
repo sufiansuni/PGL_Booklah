@@ -81,6 +81,7 @@ func createRestaurantTable() {
 		" (" +
 		"RestaurantName VARCHAR(255) PRIMARY KEY, " +
 		"CurrentPax INT, " +
+		"DietaryP VARCHAR(255), " +
 		"createdAt DATETIME, " +
 		"updatedAt DATETIME, " +
 		"deletedAt DATETIME" +

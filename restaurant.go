@@ -13,6 +13,7 @@ import (
 type restaurant struct {
 	RestaurantName string //primary key
 	CurrentPax     int
+	DietaryP       string
 	//address
 	//hours
 	//contact
@@ -68,10 +69,12 @@ func indexRestaurant(res http.ResponseWriter, req *http.Request) {
 			User           user
 			RestaurantList map[string]restaurant
 			Quantity       int
+			DietaryP       string
 		}{
 			myUser,
 			myRestaurants,
 			0,
+			"",
 		}
 		tpl.ExecuteTemplate(res, "restaurants.gohtml", data)
 		return
@@ -83,13 +86,15 @@ func indexRestaurant(res http.ResponseWriter, req *http.Request) {
 
 		// get form values
 		Quantity := req.FormValue("Quantity")
+		DietaryP := req.FormValue("diet")
+
+		iQuantity, _ := strconv.Atoi(Quantity)
 
 		if Quantity != "" {
 			//look at table database
 			query := "SELECT RestaurantName FROM tables WHERE Seats >=? AND deletedAt IS NULL"
 
 			// pass in Quantity variable
-			iQuantity, _ := strconv.Atoi(Quantity)
 			results, err := db.Query(query, iQuantity)
 			if err != nil {
 				fmt.Println(err)
@@ -110,21 +115,37 @@ func indexRestaurant(res http.ResponseWriter, req *http.Request) {
 				myfilteredRestaurants[myTable.RestaurantName] = myRestaurants[myTable.RestaurantName]
 			}
 
+		} else {
+			for k := range myRestaurants {
+				myfilteredRestaurants[k] = myRestaurants[k]
+			}
+		}
+
+		if DietaryP != "" {
+			for k, v := range myfilteredRestaurants {
+				if v.DietaryP != DietaryP {
+					delete(myfilteredRestaurants, k)
+				}
+			}
+		}
+
+		if Quantity == "" && DietaryP == "" {
+			http.Redirect(res, req, "/restaurants", http.StatusSeeOther)
+			return
+		} else {
 			data := struct {
 				User           user
 				RestaurantList map[string]restaurant
 				Quantity       int
+				DietaryP       string
 			}{
 				myUser,
 				myfilteredRestaurants,
 				iQuantity,
+				DietaryP,
 			}
 			tpl.ExecuteTemplate(res, "restaurants.gohtml", data)
-
-		} else {
-			http.Redirect(res, req, "/restaurants", http.StatusSeeOther)
 		}
-		return
 	}
 }
 func searchRestaurants(res http.ResponseWriter, req *http.Request) {
@@ -230,6 +251,7 @@ func createNewRestaurant(res http.ResponseWriter, req *http.Request) {
 		restaurantname := req.FormValue("restaurantname")
 		currentpax := req.FormValue("currentpax")
 		currentpaxi, _ := strconv.Atoi(currentpax)
+		dietaryp := req.FormValue("diet")
 
 		if restaurantname != "" {
 			// check if restaurant exist/ taken
@@ -251,6 +273,7 @@ func createNewRestaurant(res http.ResponseWriter, req *http.Request) {
 
 			myRestaurant.RestaurantName = restaurantname
 			myRestaurant.CurrentPax = currentpaxi
+			myRestaurant.DietaryP = dietaryp
 			err = insertRestaurant(myRestaurant) //previously: mapRestaurants[restaurantname] = myRestaurant
 			if err != nil {
 				fmt.Println(err)
@@ -389,6 +412,7 @@ func editRestaurant(res http.ResponseWriter, req *http.Request) {
 		restaurantname := req.FormValue("restaurantname")
 		currentpax := req.FormValue("currentpax")
 		currentpaxi, _ := strconv.Atoi(currentpax)
+		dietaryp := req.FormValue("diet")
 
 		if restaurantname != "" {
 			// check if restaurant exist/ taken
@@ -407,8 +431,8 @@ func editRestaurant(res http.ResponseWriter, req *http.Request) {
 				}
 			}
 
-			statement := "UPDATE restaurants SET RestaurantName=?, CurrentPax=?, updatedAt=? WHERE RestaurantName=?"
-			_, err = db.Exec(statement, restaurantname, currentpaxi, time.Now(), params["restaurantname"])
+			statement := "UPDATE restaurants SET RestaurantName=?, CurrentPax=?, DietaryP=?, updatedAt=? WHERE RestaurantName=?"
+			_, err = db.Exec(statement, restaurantname, currentpaxi, dietaryp, time.Now(), params["restaurantname"])
 			if err != nil {
 				fmt.Println(err)
 				http.Error(res, "Internal server error", http.StatusInternalServerError)
@@ -517,9 +541,10 @@ func deleteRestaurant(res http.ResponseWriter, req *http.Request) {
 }
 
 func insertRestaurant(myRestaurant restaurant) error {
-	_, err := db.Exec("INSERT INTO restaurants (RestaurantName, CurrentPax, createdAt) VALUES (?,?,?)",
+	_, err := db.Exec("INSERT INTO restaurants (RestaurantName, CurrentPax, DietaryP, createdAt) VALUES (?,?,?,?)",
 		myRestaurant.RestaurantName,
 		myRestaurant.CurrentPax,
+		myRestaurant.DietaryP,
 		time.Now())
 	if err != nil {
 		return err
@@ -543,8 +568,12 @@ func insertTable(myTable table) error {
 func getRestaurant(restaurantname string) (restaurant, error) {
 	var myRestaurant restaurant
 
-	query := "SELECT RestaurantName, CurrentPax FROM restaurants WHERE RestaurantName=? AND deletedAt IS NULL"
-	err := db.QueryRow(query, restaurantname).Scan(&myRestaurant.RestaurantName, &myRestaurant.CurrentPax)
+	query := "SELECT RestaurantName, CurrentPax, DietaryP FROM restaurants WHERE RestaurantName=? AND deletedAt IS NULL"
+	err := db.QueryRow(query, restaurantname).
+		Scan(&myRestaurant.RestaurantName,
+			&myRestaurant.CurrentPax,
+			&myRestaurant.DietaryP,
+		)
 
 	return myRestaurant, err
 }
@@ -578,7 +607,7 @@ func getRestaurants() (map[string]restaurant, error) {
 	var myRestaurants = map[string]restaurant{}
 	var myRestaurant restaurant
 
-	query := "SELECT RestaurantName, CurrentPax FROM restaurants WHERE deletedAt IS NULL"
+	query := "SELECT RestaurantName, CurrentPax, DietaryP FROM restaurants WHERE deletedAt IS NULL"
 
 	results, err := db.Query(query)
 	if err != nil {
@@ -587,7 +616,7 @@ func getRestaurants() (map[string]restaurant, error) {
 
 	defer results.Close()
 	for results.Next() {
-		err := results.Scan(&myRestaurant.RestaurantName, &myRestaurant.CurrentPax)
+		err := results.Scan(&myRestaurant.RestaurantName, &myRestaurant.CurrentPax, &myRestaurant.DietaryP)
 		if err != nil {
 			return myRestaurants, err
 		}

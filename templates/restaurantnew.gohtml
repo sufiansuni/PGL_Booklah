@@ -40,6 +40,16 @@
     <label for ="currentpax">Current Pax:</label>
     <input type="number" name="currentpax" min = 0 max = 999 required><br>
 
+    <label for="diet">Dietary Info: </label>
+    <select name="diet" required>
+        <option value="Vegetarian">Vegetarian</option>
+        <option value="Halal">Halal</option>
+        <option value="No Pork No Lard">No Pork No Lard</option>
+        <option value="No Beef">No Beef</option>
+        <option value="None">None</option>
+    </select>
+    <br>
+
     <div id="dynamictable">
         <input type="button" value="Add Table" onclick="createNewElement();"/>
     </div>
