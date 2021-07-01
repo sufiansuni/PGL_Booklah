@@ -2,12 +2,12 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>View Booking</title>
+    <title>Delete Booking</title>
 </head>
 <body>
-<h1>Welcome to your Booking page</h1>
+<h1>Delete your Booking</h1>
 {{if .User}}
-<h2>Here are your Booking details:</h2>
+<h2>Here are your Current Booking details:</h2>
 
     {{range $key, $val := .Booking}}
         <h3>BookingID:<a href="/viewBooking/{{$val.BookingID}}">{{$val.BookingID}}</a></h3>
@@ -24,8 +24,7 @@
 {{else}}
 There are no booking
 {{end}}
-
+<h2><a href="/viewBooking">View Booking</a></h2>
 <h2><a href="/">Return to Main Page</a></h2>
-
 </body>
 </html>

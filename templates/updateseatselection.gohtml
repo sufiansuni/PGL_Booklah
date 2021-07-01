@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Book Venue</title>
+</head>
+<h1>Welcome to BookLah</h1>
+<h1>Update Booking</h1>
+<h3>Enter the following to update booking</h3>
+
+<form method="post">
+    <input type="text" name="username" value={{.Booking.Username}}>
+    <br>
+
+    <label for ="restaurantname">Restaurant:</label>
+    <select name="restaurantname">
+    {{range $key, $val := .RestaurantList}}
+    {{if eq $val.RestaurantName $.Booking.RestaurantName}}
+      <option value={{$val.RestaurantName}} selected>
+      {{else}}
+      <option value={{$val.RestaurantName}}>
+      {{end}}
+      {{$val.RestaurantName}}</option>
+       {{end}}
+      </select>    
+    <br>
+
+    <label for="date">Date:</label>
+    <input type="date" name="date" required min="2021-06-26" value={{.Booking.Date}}>
+    <br>
+
+    <label for="time">Time: </label>
+    <input list="times" type="time" name="time" step="3600" value={{.Booking.StartTime}}>
+      <datalist id="times">
+      <option value="08:00:00">
+      <option value="09:00:00">
+      <option value="10:00:00">
+      <option value="11:00:00">
+      <option value="12:00:00">
+      <option value="13:00:00">
+      <option value="14:00:00">
+      <option value="15:00:00">
+      <option value="16:00:00">
+      <option value="17:00:00">
+      <option value="18:00:00">
+      <option value="19:00:00">
+      <option value="20:00:00">
+      <option value="21:00:00">
+      </datalist>
+    <br>
+
+    <label for="pax">Pax:</label>
+    <input type="number" name="pax" min="1" max="5" step="1" value={{.Booking.Pax}}>
+    <br>
+
+    {{if .Tables}}
+    <label for ="tablechoice">Restaurant:</label>
+    <select name="tablechoice">
+    {{range $key, $val := .Tables}}
+      <option value={{$val.TableID}}>Table {{$val.TableIndex}}, Seats: {{$val.Seats}}</option>
+    {{end}}
+    </select>
+    <br>
+    {{else}}
+    There are no available tables for your booking parameters.
+    <br>
+    {{end}}
+    <input type="submit">
+
+
+</form>
+
+<h2><a href="/restaurants"> View Restaurant Listing</a></h2>
+<h2><a href="/">Return to Main Page</a></h2>
+
+</html>
