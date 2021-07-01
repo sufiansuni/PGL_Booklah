@@ -1,16 +1,66 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Book Venue</title>
+<title>Add Booking</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<style>
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+/* Style the header */
+.header {
+  background-color: #f1f1f1;
+  padding: 20px;
+  text-align: left;
+}
+
+/* Style the top navigation bar */
+.topnav {
+  overflow: hidden;
+  background-color: #333;
+}
+
+/* Style the topnav links */
+.topnav a {
+margin-left:auto;
+margin-right: auto;
+  float: left;
+  display: block;
+  color: #f2f2f2;
+  padding: 14px 16px;
+  text-decoration: none;
+}
+
+/* Change color on hover */
+.topnav a:hover {
+  background-color: #ddd;
+  color: black;
+}
+</style>
 </head>
-<h1>Welcome to BookLah</h1>
+<body>
+
+<div class="header"><img src='https://i.postimg.cc/cKDnktpH/logo.png' border='0' alt='BookLah'/></a>
+</div>
+
+<div class="topnav">
+<a class="active" href="/"><i class="fa fa-fw fa-home"></i> Home</a> 
+<a class="active" href="/restaurants"><i class="fa fa-fw fa-search"></i> Restaurants</a>
+</div>
+
 <h1>Add Booking</h1>
 <h3>Enter the following to create booking</h3>
 
 <form method="post">
     <label for ="username">Name:</label>
-    <input type="text" name="username" value={{.User.Username}}><br>
+    <input type="text" name="username" value={{.User.Username}}><br><br>
     <label for ="restaurantname">Restaurant:</label>
     <select name="restaurantname">
     {{range $key, $val := .RestaurantList}}
@@ -23,11 +73,11 @@
 
     {{end}}
     </select>
-    <br>
+    <br><br>
 
     <label for="date">Date:</label>
     <input type="date" name="date" required min="2021-06-26">
-    <br>
+    <br><br>
 
     <label for="time">Time: </label>
     <input list="times" type="time" name="time" step="3600">
@@ -47,16 +97,12 @@
       <option value="20:00:00">
       <option value="21:00:00">
       </datalist>
-    <br>
+    <br><br>
 
     <label for="pax">Pax:</label>
     <input type="number" name="pax" min="1" max="5" step="1">
-    <br>
+    <br><br>
 
     <input type="submit" value="Find Available Tables">
 </form>
-
-<h2><a href="/restaurants"> View Restaurant Listing</a></h2>
-<h2><a href="/">Return to Main Page</a></h2>
-
 </html>
