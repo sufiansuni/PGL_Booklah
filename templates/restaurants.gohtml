@@ -18,7 +18,9 @@
 <ul>
     {{range $key, $val := .RestaurantList}}
     <li>
-        RestaurantName: <a href="/restaurants/{{$val.RestaurantName}}">{{$val.RestaurantName}}</a><br>
+        RestaurantName: <a href="/restaurants/{{$val.RestaurantName}}">{{$val.RestaurantName}}</a>
+        Current Pax: {{$val.CurrentPax}}
+        <br>
     </li>
     {{end}}
 </ul>
