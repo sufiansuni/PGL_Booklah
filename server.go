@@ -25,6 +25,7 @@ func handlers(r *mux.Router) {
 	r.HandleFunc("/restaurants", indexRestaurant)
 	r.HandleFunc("/restaurants/new", createNewRestaurant)
 	r.HandleFunc("/restaurants/{restaurantname}", viewRestaurant)
+	r.HandleFunc("/restaurants/{restaurantname}/search", searchRestaurants)
 	r.HandleFunc("/restaurants/{restaurantname}/edit", editRestaurant)
 	r.HandleFunc("/restaurants/{restaurantname}/delete", deleteRestaurant)
 

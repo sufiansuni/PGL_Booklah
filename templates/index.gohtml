@@ -1,10 +1,61 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>BOOKLAH</title>
+<title>BookLah</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<style>
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+/* Style the header */
+.header {
+  background-color: #f1f1f1;
+  padding: 20px;
+  text-align: left;
+}
+
+/* Style the top navigation bar */
+.topnav {
+  overflow: hidden;
+  background-color: #333;
+}
+
+/* Style the topnav links */
+.topnav a {
+margin-left:auto;
+margin-right: auto;
+  float: left;
+  display: block;
+  color: #f2f2f2;
+  padding: 14px 16px;
+  text-decoration: none;
+}
+
+/* Change color on hover */
+.topnav a:hover {
+  background-color: #ddd;
+  color: black;
+}
+</style>
 </head>
 <body>
+
+<div class="header"><img src='https://i.postimg.cc/cKDnktpH/logo.png' border='0' alt='BookLah'/></a>
+</div>
+
+<div class="topnav">
+<a class="active" href="/"><i class="fa fa-fw fa-home"></i> Home</a> 
+<a class="active" href="/restaurants"><i class="fa fa-fw fa-search"></i> Restaurants</a>
+<a class="active" href="/booking"><i class="fa fa-fw fa-envelope"></i> Book Now</a>
+<a href="/login"><i class="fa fa-fw fa-user"></i> Login</a>
+</div>
 <h1>Welcome to Booklah!</h1>
 {{if .Username}}
 Welcome User {{.Username}}<br>
@@ -13,12 +64,6 @@ Welcome User {{.Username}}<br>
 {{else}}
 <h2>You are currently either not logged in or need to sign up for an account</h2>
 <h2><a href="/signup">Sign Up</a></h2>
-<h2><a href="/login">Log in</a></h2>
 {{end}}
-
-<br>
-<h2><a href="/restaurants">View Restaurant Listing</a></h2>
-<h2><a href="/booking">Book Now</a></h2>
-
 </body>
 </html>
