@@ -54,6 +54,9 @@
     <label for ="restaurantname">Restaurant Name:</label>
     <input type="text" name="restaurantname" placeholder="restaurant name" value={{.Restaurant.RestaurantName}}><br>
     
+     <label for ="currentpax">Current Pax:</label>
+    <input type="number" name="currentpax" min = 0 value={{.Restaurant.CurrentPax}} required><br>
+
     <div id="dynamictable">
         <input type="button" value="Add Table" onclick="createNewElement();"/>
     </div>

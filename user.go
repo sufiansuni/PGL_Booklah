@@ -11,14 +11,14 @@ import (
 )
 
 type user struct {
-	Username  string //primary key
-	Password  []byte
-	Type      string
+	Username string //primary key
+	Password []byte
+	Type     string
 }
 
 type session struct {
-	UUID      string //primary key
-	Username  string //foreign key
+	UUID     string //primary key
+	Username string //foreign key
 }
 
 // The following maps are no longer used
@@ -164,7 +164,7 @@ func login(res http.ResponseWriter, req *http.Request) {
 		} else {
 			fmt.Println("Session Created")
 		}
-		
+
 		http.Redirect(res, req, "/", http.StatusSeeOther)
 		return
 	}

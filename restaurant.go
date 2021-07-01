@@ -12,6 +12,7 @@ import (
 
 type restaurant struct {
 	RestaurantName string //primary key
+	CurrentPax     int
 	//address
 	//hours
 	//contact
@@ -54,6 +55,7 @@ func indexRestaurant(res http.ResponseWriter, req *http.Request) {
 
 	myRestaurants, err := getRestaurants()
 	if err != nil {
+		fmt.Println(err)
 		http.Error(res, "Internal server error", http.StatusInternalServerError)
 		return
 
@@ -90,6 +92,7 @@ func indexRestaurant(res http.ResponseWriter, req *http.Request) {
 			iQuantity, _ := strconv.Atoi(Quantity)
 			results, err := db.Query(query, iQuantity)
 			if err != nil {
+				fmt.Println(err)
 				http.Error(res, "Internal server error", http.StatusInternalServerError)
 				return
 			}
@@ -98,6 +101,7 @@ func indexRestaurant(res http.ResponseWriter, req *http.Request) {
 				//store info from table database into my own variable
 				err := results.Scan(&myTable.RestaurantName)
 				if err != nil {
+					fmt.Println(err)
 					http.Error(res, "Internal server error", http.StatusInternalServerError)
 					return
 				}
@@ -150,6 +154,8 @@ func createNewRestaurant(res http.ResponseWriter, req *http.Request) {
 	if req.Method == http.MethodPost {
 		// get form values
 		restaurantname := req.FormValue("restaurantname")
+		currentpax := req.FormValue("currentpax")
+		currentpaxi, _ := strconv.Atoi(currentpax)
 
 		if restaurantname != "" {
 			// check if restaurant exist/ taken
@@ -160,6 +166,7 @@ func createNewRestaurant(res http.ResponseWriter, req *http.Request) {
 
 			if err != nil {
 				if err != sql.ErrNoRows {
+					fmt.Println(err)
 					http.Error(res, "Internal server error", http.StatusInternalServerError)
 					return
 				}
@@ -169,6 +176,7 @@ func createNewRestaurant(res http.ResponseWriter, req *http.Request) {
 			}
 
 			myRestaurant.RestaurantName = restaurantname
+			myRestaurant.CurrentPax = currentpaxi
 			err = insertRestaurant(myRestaurant) //previously: mapRestaurants[restaurantname] = myRestaurant
 			if err != nil {
 				fmt.Println(err)
@@ -229,6 +237,7 @@ func viewRestaurant(res http.ResponseWriter, req *http.Request) {
 	myRestaurant, err := getRestaurant(params["restaurantname"])
 	if err != nil {
 		if err != sql.ErrNoRows {
+			fmt.Println(err)
 			http.Error(res, "Internal server error", http.StatusInternalServerError)
 			return
 		} else {
@@ -240,6 +249,7 @@ func viewRestaurant(res http.ResponseWriter, req *http.Request) {
 	myTables, err = getTables(params["restaurantname"])
 	if err != nil {
 		if err != sql.ErrNoRows {
+			fmt.Println(err)
 			http.Error(res, "Internal server error", http.StatusInternalServerError)
 			return
 		} else {
@@ -278,6 +288,7 @@ func editRestaurant(res http.ResponseWriter, req *http.Request) {
 	myRestaurant, err := getRestaurant(params["restaurantname"])
 	if err != nil {
 		if err != sql.ErrNoRows {
+			fmt.Println(err)
 			http.Error(res, "Internal server error", http.StatusInternalServerError)
 			return
 		} else {
@@ -289,6 +300,7 @@ func editRestaurant(res http.ResponseWriter, req *http.Request) {
 	myTables, err = getTables(params["restaurantname"])
 	if err != nil {
 		if err != sql.ErrNoRows {
+			fmt.Println(err)
 			http.Error(res, "Internal server error", http.StatusInternalServerError)
 			return
 		} else {
@@ -301,12 +313,16 @@ func editRestaurant(res http.ResponseWriter, req *http.Request) {
 	if req.Method == http.MethodPost {
 		// get form values
 		restaurantname := req.FormValue("restaurantname")
+		currentpax := req.FormValue("currentpax")
+		currentpaxi, _ := strconv.Atoi(currentpax)
+
 		if restaurantname != "" {
 			// check if restaurant exist/ taken
 
 			restaurantCheck, err := getRestaurant(restaurantname)
 			if err != nil {
 				if err != sql.ErrNoRows {
+					fmt.Println(err)
 					http.Error(res, "Internal server error", http.StatusInternalServerError)
 					return
 				}
@@ -317,9 +333,10 @@ func editRestaurant(res http.ResponseWriter, req *http.Request) {
 				}
 			}
 
-			statement := "UPDATE restaurants SET RestaurantName=?, updatedAt=? WHERE RestaurantName=?"
-			_, err = db.Exec(statement, restaurantname, time.Now(), params["restaurantname"])
+			statement := "UPDATE restaurants SET RestaurantName=?, CurrentPax=?, updatedAt=? WHERE RestaurantName=?"
+			_, err = db.Exec(statement, restaurantname, currentpaxi, time.Now(), params["restaurantname"])
 			if err != nil {
+				fmt.Println(err)
 				http.Error(res, "Internal server error", http.StatusInternalServerError)
 				return
 			}
@@ -332,12 +349,14 @@ func editRestaurant(res http.ResponseWriter, req *http.Request) {
 				if newTableIndex != "" && newTableSeats != "" {
 					newTableIndexConv, err := strconv.Atoi(newTableIndex)
 					if err != nil {
+						fmt.Println(err)
 						http.Error(res, "Internal server error", http.StatusInternalServerError)
 						return
 					}
 
 					newTableSeatsConv, err := strconv.Atoi(newTableSeats)
 					if err != nil {
+						fmt.Println(err)
 						http.Error(res, "Internal server error", http.StatusInternalServerError)
 						return
 					}
@@ -347,6 +366,7 @@ func editRestaurant(res http.ResponseWriter, req *http.Request) {
 					err = db.QueryRow(query, restaurantname, newTableIndexConv).Scan(&checker)
 					if err != nil {
 						if err != sql.ErrNoRows {
+							fmt.Println(err)
 							http.Error(res, "Internal server error", http.StatusInternalServerError)
 							return
 
@@ -361,6 +381,7 @@ func editRestaurant(res http.ResponseWriter, req *http.Request) {
 							restaurantname,
 							newTableIndexConv)
 						if err != nil {
+							fmt.Println(err)
 							http.Error(res, "Internal server error", http.StatusInternalServerError)
 							return
 						}
@@ -373,6 +394,7 @@ func editRestaurant(res http.ResponseWriter, req *http.Request) {
 
 						err := insertTable(myTable)
 						if err != nil {
+							fmt.Println(err)
 							http.Error(res, "Internal server error", http.StatusInternalServerError)
 							return
 						}
@@ -410,6 +432,7 @@ func deleteRestaurant(res http.ResponseWriter, req *http.Request) {
 	statement := "UPDATE restaurants SET deletedAt=? WHERE RestaurantName=?"
 	_, err := db.Exec(statement, time.Now(), params["restaurantname"])
 	if err != nil {
+		fmt.Println(err)
 		http.Error(res, "Internal server error", http.StatusInternalServerError)
 		return
 	}
@@ -420,8 +443,9 @@ func deleteRestaurant(res http.ResponseWriter, req *http.Request) {
 }
 
 func insertRestaurant(myRestaurant restaurant) error {
-	_, err := db.Exec("INSERT INTO restaurants (RestaurantName, createdAt) VALUES (?,?)",
+	_, err := db.Exec("INSERT INTO restaurants (RestaurantName, CurrentPax, createdAt) VALUES (?,?,?)",
 		myRestaurant.RestaurantName,
+		myRestaurant.CurrentPax,
 		time.Now())
 	if err != nil {
 		return err
@@ -445,8 +469,8 @@ func insertTable(myTable table) error {
 func getRestaurant(restaurantname string) (restaurant, error) {
 	var myRestaurant restaurant
 
-	query := "SELECT RestaurantName FROM restaurants WHERE RestaurantName=? AND deletedAt IS NULL"
-	err := db.QueryRow(query, restaurantname).Scan(&myRestaurant.RestaurantName)
+	query := "SELECT RestaurantName, CurrentPax FROM restaurants WHERE RestaurantName=? AND deletedAt IS NULL"
+	err := db.QueryRow(query, restaurantname).Scan(&myRestaurant.RestaurantName, &myRestaurant.CurrentPax)
 
 	return myRestaurant, err
 }
@@ -480,7 +504,7 @@ func getRestaurants() (map[string]restaurant, error) {
 	var myRestaurants = map[string]restaurant{}
 	var myRestaurant restaurant
 
-	query := "SELECT RestaurantName FROM restaurants WHERE deletedAt IS NULL"
+	query := "SELECT RestaurantName, CurrentPax FROM restaurants WHERE deletedAt IS NULL"
 
 	results, err := db.Query(query)
 	if err != nil {
@@ -489,7 +513,7 @@ func getRestaurants() (map[string]restaurant, error) {
 
 	defer results.Close()
 	for results.Next() {
-		err := results.Scan(&myRestaurant.RestaurantName)
+		err := results.Scan(&myRestaurant.RestaurantName, &myRestaurant.CurrentPax)
 		if err != nil {
 			return myRestaurants, err
 		}
