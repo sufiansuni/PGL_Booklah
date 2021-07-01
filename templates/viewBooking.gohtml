@@ -9,22 +9,25 @@
 {{if .User}}
 <h2>Here are your Booking details:</h2>
 
-    {{range $key, $val := .Booking}}
+    {{range $key, $val := .Bookings}}
         <h3>BookingID:<a href="/viewBooking/{{$val.BookingID}}">{{$val.BookingID}}</a></h3>
         <h3> RestaurantName:{{$val.RestaurantName}}</h3>
         <h3> Date:{{$val.Date}}</h3>
         <h3> Time:{{$val.StartTime}}</h3>
         <h3>Pax:{{$val.Pax}}</h3>
-        <h3>TableID:{{$val.TableID}}</h3><br><br>
-        <h3><a href="/deleteBooking">Delete Booking</a></h3>
-
-
+        <h3>TableID:{{$val.TableID}}</h3>
+        <form action="/viewBooking/{{$val.BookingID}}/delete" onsubmit="return confirm('Are you sure you want to delete?');">
+        <input type="submit" value="Delete This Booking" />
+        </form>
+        <br>
+        <br>
     {{end}}
 
 {{else}}
-There are no booking
+There are no bookings
 {{end}}
 
+<h2><a href="/viewBooking">View Your Bookings</a></h2>
 <h2><a href="/">Return to Main Page</a></h2>
 
 </body>

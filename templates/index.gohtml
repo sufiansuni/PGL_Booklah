@@ -8,6 +8,7 @@
 <h1>Welcome to Booklah!</h1>
 {{if .Username}}
 Welcome User {{.Username}}<br>
+<h2><a href="/viewBooking">View Your Bookings</a></h2>
 <h2><a href="/logout">Log Out</a></h2>
 {{else}}
 <h2>You are currently either not logged in or need to sign up for an account</h2>
@@ -18,7 +19,6 @@ Welcome User {{.Username}}<br>
 <br>
 <h2><a href="/restaurants">View Restaurant Listing</a></h2>
 <h2><a href="/booking">Book Now</a></h2>
-<h2><a href="/viewBooking">View Booking</a></h2>
 
 </body>
 </html>

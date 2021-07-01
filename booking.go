@@ -13,7 +13,7 @@ import (
 func viewBooking(res http.ResponseWriter, req *http.Request) {
 	myUser := checkUser(res, req)
 
-	myBooking, err := getBooking(myUser.Username)
+	myBookings, err := getBookings(myUser.Username)
 	if err != nil {
 		http.Error(res, "Internal server error", http.StatusInternalServerError)
 		fmt.Println(err)
@@ -21,11 +21,11 @@ func viewBooking(res http.ResponseWriter, req *http.Request) {
 	}
 
 	data := struct {
-		User    user
-		Booking map[int]booking
+		User     user
+		Bookings map[int]booking
 	}{
 		myUser,
-		myBooking,
+		myBookings,
 	}
 	tpl.ExecuteTemplate(res, "viewBooking.gohtml", data)
 }
@@ -172,13 +172,14 @@ func createBooking(res http.ResponseWriter, req *http.Request) {
 		}
 	}
 }
+
 func editBooking(res http.ResponseWriter, req *http.Request) {
 	myUser := checkUser(res, req)
 	//retrieve initial data
 	params := mux.Vars(req)
 	BookingIDtoEdit := params["BookingID"]
 	myRestaurants, _ := getRestaurants()
-	myBookings, err := getBooking(myUser.Username)
+	myBookings, err := getBookings(myUser.Username)
 	var myBooking booking
 	iBooking, _ := strconv.Atoi(BookingIDtoEdit)
 
@@ -323,37 +324,39 @@ func editBooking(res http.ResponseWriter, req *http.Request) {
 		}
 	}
 }
+
 func deleteBooking(res http.ResponseWriter, req *http.Request) {
 	myUser := checkUser(res, req)
 	//retrieve initial data
 	params := mux.Vars(req)
 	BookingIDtoDel := params["BookingID"]
 	iDelete, _ := strconv.Atoi(BookingIDtoDel)
-	myBookings, err := getBookings(iDelete)
-	var myBooking booking
+	myBookings, err := getBookings(myUser.Username)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(res, "Internal server error", http.StatusInternalServerError)
+	}
+
+	myBooking := myBookings[iDelete]
+
+	_, err = db.Exec("UPDATE bookings SET Status=?, deletedAt=? WHERE BookingID=?",
+		"Deleted",
+		time.Now(),
+		myBooking.BookingID)
 
 	if err != nil {
 		fmt.Println(err)
 		http.Error(res, "Internal server error", http.StatusInternalServerError)
-		return
-	}
-	if req.Method == http.MethodGet {
-		myBooking = myBookings[iDelete]
-		data := struct {
-			User    user
-			Booking booking
-		}{
-			myUser,
-			myBooking,
-		}
 
-		tpl.ExecuteTemplate(res, "deletebooking.gohtml", data)
-		return
+	} else {
+		//fmt.Fprintf(res, "Booking Deleted Successfully!")
+		//fmt.Fprintf(res,"<a href='/viewBooking'>View Booking</a>")
+		http.Redirect(res, req, "/viewBooking", http.StatusSeeOther)
 	}
 }
 
 func updateBooking(myBooking booking) error {
-	_, err := db.Exec("UPDATE bookings SET Username=?, RestaurantName=?, Date=?, StartTime=?, Pax=?, TableID=?, Status=?, updatedAt=? WHERE BookingID=?",
+	_, err := db.Exec("UPDATE bookings SET Username=?, RestaurantName=?, Date=?, StartTime=?, Pax=?, TableID=?, Status=?, updatedAt=? WHERE BookingID=? AND deletedAt IS NULL",
 		myBooking.Username,
 		myBooking.RestaurantName,
 		myBooking.Date,
@@ -385,7 +388,7 @@ func insertBooking(myBooking booking) error {
 	return nil
 }
 
-func getBooking(Username string) (map[int]booking, error) {
+func getBookings(Username string) (map[int]booking, error) {
 	var myBookings = map[int]booking{}
 	var myBooking booking
 
@@ -414,31 +417,31 @@ func getBooking(Username string) (map[int]booking, error) {
 	return myBookings, err
 }
 
-func getBookings(BookingID int) (map[int]booking, error) {
-	var myBookings = map[int]booking{}
-	var myBooking booking
+// func getBookings(BookingID int) (map[int]booking, error) {
+// 	var myBookings = map[int]booking{}
+// 	var myBooking booking
 
-	query := "SELECT BookingID, Username, RestaurantName, Date, StartTime, Pax, TableID FROM bookings WHERE Username=? AND deletedAt IS NULL"
+// 	query := "SELECT BookingID, Username, RestaurantName, Date, StartTime, Pax, TableID FROM bookings WHERE Username=? AND deletedAt IS NULL"
 
-	results, err := db.Query(query, BookingID)
-	if err != nil {
-		return myBookings, err
-	}
+// 	results, err := db.Query(query, BookingID)
+// 	if err != nil {
+// 		return myBookings, err
+// 	}
 
-	defer results.Close()
-	for results.Next() {
-		err := results.Scan(
-			&myBooking.BookingID,
-			&myBooking.Username,
-			&myBooking.RestaurantName,
-			&myBooking.Date,
-			&myBooking.StartTime,
-			&myBooking.Pax,
-			&myBooking.TableID)
-		if err != nil {
-			return myBookings, err
-		}
-		myBookings[myBooking.BookingID] = myBooking
-	}
-	return myBookings, err
-}
+// 	defer results.Close()
+// 	for results.Next() {
+// 		err := results.Scan(
+// 			&myBooking.BookingID,
+// 			&myBooking.Username,
+// 			&myBooking.RestaurantName,
+// 			&myBooking.Date,
+// 			&myBooking.StartTime,
+// 			&myBooking.Pax,
+// 			&myBooking.TableID)
+// 		if err != nil {
+// 			return myBookings, err
+// 		}
+// 		myBookings[myBooking.BookingID] = myBooking
+// 	}
+// 	return myBookings, err
+// }
