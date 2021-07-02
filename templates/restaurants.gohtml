@@ -24,7 +24,13 @@
     {{range $key, $val := .RestaurantList}}
     <li>
         RestaurantName: <a href="/restaurants/{{$val.RestaurantName}}">{{$val.RestaurantName}}</a>, 
-        Current Pax: {{$val.CurrentPax}}, 
+        {{if le $val.CurrentPax 25}}
+        Current Pax: <span style="background-color:#00FF00">{{$val.CurrentPax}}</span>
+        {{else if le $val.CurrentPax 40}}
+        Current Pax: <span style="background-color:#ffbf00">{{$val.CurrentPax}}</span>
+        {{else if le $val.CurrentPax 50}}
+        Current Pax: <span style="background-color:#ff0000">{{$val.CurrentPax}}</span>
+        {{end}},
         Dietary Info: {{$val.DietaryP}}
     </li>
     {{end}}

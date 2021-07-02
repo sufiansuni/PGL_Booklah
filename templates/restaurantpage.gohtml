@@ -10,7 +10,16 @@
 {{if .Restaurant}}
 <h2>Restaurant Details:</h2>
 Restaurant Name: {{.Restaurant.RestaurantName}}<br>
-Current Pax: {{.Restaurant.CurrentPax}}<br>
+
+{{if le .Restaurant.CurrentPax 25}}
+Current Pax: <span style="background-color:#00FF00">{{.Restaurant.CurrentPax}}</span> 
+{{else if le .Restaurant.CurrentPax 40}}
+Current Pax: <span style="background-color:#ffbf00">{{.Restaurant.CurrentPax}}</span>
+{{else if le .Restaurant.CurrentPax 50}}
+Current Pax: <span style="background-color:#ff0000">{{.Restaurant.CurrentPax}}</span>
+{{end}}
+<br>
+
 Dietary Info: {{.Restaurant.DietaryP}}<br>
 
 {{if .Tables}}
