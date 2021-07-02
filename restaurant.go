@@ -472,7 +472,7 @@ func editRestaurant(res http.ResponseWriter, req *http.Request) {
 					}
 
 					if checker != 0 {
-						statement := "UPDATE tables SET Seats=?, updatedAt=? WHERE RestaurantName=? AND TableIndex=?"
+						statement := "UPDATE tables SET Seats=?, updatedAt=? WHERE RestaurantName=? AND TableIndex=? AND deletedAt IS NULL"
 						_, err = db.Exec(statement,
 							newTableSeatsConv,
 							time.Now(),
@@ -537,6 +537,16 @@ func deleteRestaurant(res http.ResponseWriter, req *http.Request) {
 
 	fmt.Println(params["restaurantname"], "deleted")
 
+	statement = "UPDATE tables deletedAt=? WHERE RestaurantName=? AND deletedAt IS NULL"
+	_, err = db.Exec(statement,
+		time.Now(),
+		params["restaurantname"],
+	)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(res, "Internal server error", http.StatusInternalServerError)
+		return
+	}
 	http.Redirect(res, req, "/restaurants", http.StatusSeeOther)
 }
 
