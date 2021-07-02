@@ -148,6 +148,7 @@ func indexRestaurant(res http.ResponseWriter, req *http.Request) {
 		}
 	}
 }
+
 func searchRestaurants(res http.ResponseWriter, req *http.Request) {
 	myUser := checkUser(res, req)
 
@@ -527,7 +528,7 @@ func deleteRestaurant(res http.ResponseWriter, req *http.Request) {
 	params := mux.Vars(req)
 
 	// previously: delete(mapRestaurants, params["restaurantname"])
-	statement := "UPDATE restaurants SET deletedAt=? WHERE RestaurantName=?"
+	statement := "UPDATE restaurants SET deletedAt=? WHERE RestaurantName=? AND deletedAt IS NULL"
 	_, err := db.Exec(statement, time.Now(), params["restaurantname"])
 	if err != nil {
 		fmt.Println(err)
@@ -537,7 +538,7 @@ func deleteRestaurant(res http.ResponseWriter, req *http.Request) {
 
 	fmt.Println(params["restaurantname"], "deleted")
 
-	statement = "UPDATE tables deletedAt=? WHERE RestaurantName=? AND deletedAt IS NULL"
+	statement = "UPDATE tables SET deletedAt=? WHERE RestaurantName=? AND deletedAt IS NULL"
 	_, err = db.Exec(statement,
 		time.Now(),
 		params["restaurantname"],
